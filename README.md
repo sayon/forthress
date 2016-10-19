@@ -179,8 +179,8 @@ I don't think we should support more systems because this is an educational
 project first, and multiple preprocessor directives will clutter it to death.
 
 ## Code overview
-* `src/forthress.asm` is the main starting point, defining most important constants, inner interpreter,
-allocating memory regions etc.
+* `src/forthress.asm` defines the entry point, most important constants, inner interpreter,
+memory regions etc.
 * `src/macro.inc` is an utility file which stores macro definitions to sweeten the words definition. 
 * `src/words.inc` is the assembly file containing all predefined words.
 * `src/util.asm` is built into a separate static library containing input
