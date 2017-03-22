@@ -22,7 +22,7 @@ Forthress was written as an exercise and an example of how one can
 create a working Forth interpreter which bootstraps itself.
 
 Forthress is also created as an example for my course book ["Low-Level
-Programming: C, Assembly, and Program Execution on Intel x86-64 Architecture"](www.apress.com/us/book/9781484224021),
+Programming: C, Assembly, and Program Execution on Intel x86-64 Architecture"](http://www.apress.com/us/book/9781484224021),
 which will be out in 2017 thanks to [APress](http://apress.com). 
 
 ## Predefined words
