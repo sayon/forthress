@@ -85,7 +85,7 @@ which will be out in 2017 thanks to [APress](http://apress.com).
 * `bye`
   Exits Forthress
 * `syscall`
-  ( call_num a1 a2 a3 a4 a5 a6 -- new_rax )
+  ( call_num a1 a2 a3 a4 a5 a6 -- new_rax new_rdx)
   Executes syscall
   The following registers store arguments (according to ABI) 
   __rdi__ , __rsi__ , __rdx__ , __r10__ , __r8__ and __r9__
@@ -98,9 +98,11 @@ which will be out in 2017 thanks to [APress](http://apress.com).
                       ^ branch adds 24 to this address and stores it in PC
   ```
 
-* `0branch`
   Branch is a compile-only word. 
+
+* `0branch`
   Jump to a location if TOS = 0. Location is calculated in a similar way
+  
   Branch0 is a compile-only word. 
 
 * `lit`
@@ -125,6 +127,9 @@ which will be out in 2017 thanks to [APress](http://apress.com).
 * `!`
   ( val addr -- ) 
   Store value by address.
+* `!c`
+  ( char addr -- ) 
+  Store one byte by address.
 * `@c`
   ( addr -- char )
   Read one byte starting at addr.

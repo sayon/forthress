@@ -126,12 +126,10 @@ native ".S", show_stack
         add rcx, 8 
         jmp .loop
     
-section .rodata
-    interpreter_stub: dq xt_interpreter
-
 ; Stores the data stack base. It is useful for .S
 section .data
     stack_base: dq 0
+
 native "init", init
     mov qword [state], 0
     mov rstack, rstack_start
@@ -176,7 +174,6 @@ native "r@", r_fetch
     push qword [rstack]
     jmp next
  
-colon "constant", constant
     
 ; ( str -- header_addr )
 native "find", find
@@ -195,7 +192,6 @@ native "find", find
     jnz .loop
 .not_found:
     mov qword [rsp], 0
-    push 0
     jmp next
 .found:
     mov [rsp], rsi
@@ -245,18 +241,41 @@ native "number", number
     push rdx
     jmp next   
 
-; ( addr -- ) 
+colon "strlen", strlen
+    dq xt_dup
+.loop:
+    dq xt_dup  
+    dq xt_fetch_char 
+    branch0 .exit
+    dq xt_lit, 1, xt_plus
+    branch .loop 
+.exit: 
+    dq xt_swap, xt_minus, xt_exit
+
+; ( addr len -- ) 
 ; Prints a null-terminated string
-native "prints", prints 
-    pop rdi
-    call print_string
-    jmp next
+colon "printc", printc 
+    dq xt_to_r
+.loop:
+    dq xt_r_fetch
+    branch0 .exit
+    dq xt_dup, xt_fetch_char, xt_emit
+    dq xt_lit, 1, xt_plus
+    dq xt_from_r, xt_lit, 1, xt_minus, xt_to_r
+    branch .loop 
+
+    .exit: 
+    dq xt_from_r, xt_drop, xt_exit
+
+colon "prints", prints
+    dq xt_dup, xt_strlen, xt_printc, xt_exit
 
 ; Exits Forthress
 native "bye", bye
     mov rax, 60
     xor rdi, rdi
     syscall
+
 
 ; ( call_num a1 a2 a3 a4 a5 a6 -- new_rax )
 ; Executes syscall
@@ -272,6 +291,7 @@ native "syscall", syscall
     pop rax
     syscall
     push rax
+    push rdx
     jmp next
 
 ; Jump to a location. Location is an offset relative to the argument end
@@ -286,7 +306,7 @@ native "branch", branch
 ; Jump to a location if TOS = 0. Location is calculated in a similar way
 ; F.e.: |xt_branch|   24 | <next command> 
 ;                         ^ branch adds 24 to this address and stores it in PC
-; Branch0 is a compile-only word. 
+; 0branch is a compile-only word. 
 native "0branch", branch0
     pop rax
     test rax, rax
@@ -337,7 +357,15 @@ native "@", fetch
 native "!", write
     pop rax
     pop rdx
-    mov [rdx], rax
+    mov [rax], rdx
+    jmp next
+
+; ( val addr -- ) 
+; Store value by address
+native "!c", write_char
+    pop rax
+    pop rdx
+    mov [rax], dl 
     jmp next
 
 ; ( addr -- char )
@@ -404,28 +432,61 @@ colon ":", colon
     dq xt_inbuf, xt_word
     branch0 .restart
     dq xt_lit, 0, xt_inbuf, xt_create
-    dq xt_state, xt_lit, 1, xt_write
+    dq xt_lit, 1, xt_state, xt_write
     dq xt_lit, i_docol, xt_comma
     dq xt_exit 
 
 ; End the current word definition
 colon ";", semicolon, 1
-    dq xt_state, xt_lit, 0, xt_write
+    dq xt_lit, 0, xt_state, xt_write
     dq xt_lit, xt_exit, xt_comma
     dq xt_exit
    
-; Forthress interpreter 
-; Check the 'branch' and 'branch0' macros in 'macro.inc'
-colon "interpreter", interpreter
-.start:
+colon "IMMEDIATE", immediate 
+    dq xt_lit, 1
+    dq xt_last_word, xt_fetch, xt_cfa, xt_lit, 1, xt_minus
+    dq xt_write_char
+    dq xt_exit
+
+colon "info", info
+    dq xt_dup
+    dq xt_find, xt_dup
+    branch0 .no_word
+    dq xt_lit, 9, xt_plus, xt_prints
+    dq xt_exit
+    .no_word:
+    dq xt_drop
+    dq xt_prints
+    dq xt_lit, msg_no_such_word, xt_prints    
+    dq xt_exit
+
+section .rodata
+interpreter_stub: 
+
     dq xt_inbuf, xt_word
     branch0 .end_of_input
 
-    dq xt_inbuf, xt_find       ; find in dict
+    dq xt_inbuf
+    dq xt_interpreter
 
+    branch interpreter_stub
+
+    .end_of_input:
+    dq xt_bye
+
+; Forthress interpreter 
+; Check the 'branch' and 'branch0' macros in 'macro.inc'
+colon "interpreter", interpreter
+.start: 
+; ( inbuf )
+    dq xt_dup, xt_find       ; find in dict
+
+; ( inbuf dictaddr )
     dq xt_dup
     branch0 .number  ; if not found, try to parse as a number
     dq xt_cfa
+
+; ( inbuf xt )
 
     ; if compile
     dq xt_state, xt_fetch
@@ -437,29 +498,42 @@ colon "interpreter", interpreter
     branch0 .interpreting
 
     ; compile
+
+; ( inbuf xt )
     dq xt_comma
-    branch .start
+    dq xt_drop
+    dq xt_exit
 
     .interpreting: 
-    dq xt_execute    
-    branch .start 
 
-    .number:
+; ( inbuf xt )
+    dq xt_swap, xt_drop
+    dq xt_execute
+    dq xt_exit
+
+    .number: 
+; ( inbuf dictaddr )
     dq xt_drop
-    dq xt_drop
-    dq xt_inbuf
-    dq xt_number
+    dq xt_dup
+    dq xt_number ; ( inbuf num 0/1 )
     branch0 .no_word
-  
+ 
+   ; ( inbuf num ) 
+    dq xt_swap, xt_drop
     dq xt_state, xt_fetch  ; if interpreting, that's it
-    branch0 .start
+    branch0 .exit
                            ; when compiling, check if it was after a branch
+   
+   ; ( num ) 
     dq xt_here, xt_lit, 8, xt_minus
+
+   ; ( num prev_xt ) 
+    dq xt_dup
     dq xt_lit, xt_branch0
     dq xt_equals, xt_not
     branch0 .is_branch
-   
-    dq xt_here, xt_lit, 8, xt_minus
+
+    dq xt_dup
     dq xt_lit, xt_branch
     dq xt_equals, xt_not
     branch0 .is_branch
@@ -467,16 +541,15 @@ colon "interpreter", interpreter
     dq xt_lit, xt_lit, xt_comma
 
 .is_branch: 
+   ; ( num prev_xt ) 
+    dq xt_drop
     dq xt_comma
-
-    branch .start
-
-    .no_word:
-    dq xt_drop, xt_inbuf, xt_prints
-    dq xt_lit, msg_no_such_word, xt_prints    
-    branch .start
-
-    .end_of_input:
-    dq xt_bye
     dq xt_exit
 
+.no_word:
+    ; ( inbuf num=0 )
+    dq xt_drop
+    dq xt_prints
+    dq xt_lit, msg_no_such_word, xt_prints    
+.exit:
+    dq xt_exit 

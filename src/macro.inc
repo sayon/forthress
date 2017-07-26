@@ -18,16 +18,23 @@
 native %1, %2, 0
 %endmacro
 
+section .data
+newline: db 10, 0
+
 %macro colon 3
 section .data 
     wh_ %+ %2 : dq _lw
     %define _lw wh_ %+ %2 
     db 0  ; to mark the name start
+    str_ %+ %2:
     db %1, 0
     db %3
     
     
     xt_ %+ %2 : dq i_docol
+    ;dq xt_show_stack
+    ;dq xt_lit, str_ %+ %2, xt_prints
+    ;dq xt_lit, newline, xt_prints
 %endmacro
 
 %macro colon 2
