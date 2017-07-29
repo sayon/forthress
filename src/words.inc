@@ -10,7 +10,61 @@
 ;
 ; ------------------------------------------------
 
-; ( a -- )
+
+colon "'", tick, 1
+	dq xt_inbuf
+	dq xt_word
+	dq xt_drop
+	dq xt_inbuf
+	dq xt_find
+	dq xt_cfa
+    dq xt_state, xt_fetch
+    branch0 .interpret
+    dq xt_lit, xt_lit
+    dq xt_comma
+    dq xt_comma
+.interpret:
+	dq xt_exit
+
+
+_cfa:
+    mov rsi, rdi
+    add rsi, 9
+    .loop:
+    mov al, [rsi]
+    test al, al
+    jz .end
+    inc rsi
+    jmp .loop
+
+    .end:
+    add rsi, 2
+    mov rax, rsi
+ret
+
+native "dump", dump
+    mov rdi, [last_word]
+.loop:
+    push rdi
+    add rdi, 9
+    call print_string
+    mov rdi, ':'
+    call print_char
+    mov rdi, [rsp]
+    call _cfa
+    mov rdi, rax
+    call print_int
+    mov rdi, 10 
+    call print_char
+
+    pop rdi
+
+    mov rdi, [rdi]
+    test rdi, rdi
+    jnz .loop
+    jmp next
+
+    ; ( a -- )
 native "drop", drop
     add rsp, 8
     jmp next
@@ -95,13 +149,6 @@ native "=", equals
     cmp rax, rdx
     sete al
     movzx rax, al
-    push rax
-    jmp next
-
-; ( str -- len )
-native "count", count
-    pop rdi
-    call string_length
     push rax
     jmp next
 
@@ -215,13 +262,46 @@ native "cfa", cfa
     push rsi
     jmp next
 
+native "afc", afc
+    pop rsi
+    sub rsi, 3
+    .loop:
+    mov al, [rsi]
+    test al, al
+    jz .end
+    dec rsi
+    jmp .loop
+    .end:
+    push rsi
+    sub rsi, 8
+    jmp next
+
+; colon "infoxt", infoxt
+; dq xt_afc
+; dq xt_lit, 9, xt_plus, xt_dup, xt_prints 
+; dq xt_lit, 20, xt_emit
+; 
+; colon "info", infoxt
+; dq xt_find, xt_dup
+; dq xt_lit, 9, xt_plus, xt_prints, xt_lit, ':', xt_emit
+; dq xt_cfa 
+; dq xt_lit, 8, xt_plus
+; .loop:
+; dq xt_dup, xt_fetch
+; dq xt_dup, xt_lit, xt_exit, xt_equals, xt_not
+; branch0 .loop
+
+
+;
+
 ; ( c -- )
 ; Outputs a single character to stdout
 native "emit", emit
     pop rdi
     call print_char
     jmp next
-  
+ 
+
 
 ; ( addr -- len ) 
 ; Reads word from stdin and stores it starting at address  
@@ -241,16 +321,16 @@ native "number", number
     push rdx
     jmp next   
 
-colon "strlen", strlen
-    dq xt_dup
-.loop:
-    dq xt_dup  
-    dq xt_fetch_char 
-    branch0 .exit
-    dq xt_lit, 1, xt_plus
-    branch .loop 
-.exit: 
-    dq xt_swap, xt_minus, xt_exit
+colon "count", count 
+     dq xt_dup
+ .loop:
+     dq xt_dup  
+     dq xt_fetch_char 
+     branch0 .exit
+     dq xt_lit, 1, xt_plus
+     branch .loop 
+ .exit: 
+     dq xt_swap, xt_minus, xt_exit
 
 ; ( addr len -- ) 
 ; Prints a null-terminated string
@@ -265,19 +345,31 @@ colon "printc", printc
     branch .loop 
 
     .exit: 
-    dq xt_from_r, xt_drop, xt_exit
+    dq xt_from_r, xt_drop, xt_drop, xt_exit
 
 colon "prints", prints
-    dq xt_dup, xt_strlen, xt_printc, xt_exit
+     dq xt_dup, xt_count, xt_printc, xt_exit
+; native "prints", prints
+    ; pop rdi
+    ; call print_string
+    ; jmp next
 
 ; Exits Forthress
 native "bye", bye
     mov rax, 60
-    xor rdi, rdi
+    mov rdi, 0
     syscall
 
+;dq xt_lit, 60
+;   dq xt_lit, 0
+;   dq xt_lit, 0
+;   dq xt_lit, 0
+;   dq xt_lit, 0
+;   dq xt_lit, 0
+;   dq xt_lit, 0
+;   dq xt_syscall
 
-; ( call_num a1 a2 a3 a4 a5 a6 -- new_rax )
+; ( call_num a1 a2 a3 a4 a5 a6 -- new_rax new_rdx )
 ; Executes syscall
 ; The following registers store arguments (according to ABI) 
 ; rdi , rsi , rdx , r10 , r8 and r9 
@@ -294,24 +386,20 @@ native "syscall", syscall
     push rdx
     jmp next
 
-; Jump to a location. Location is an offset relative to the argument end
-; F.e.: |xt_branch|   24 | <next command> 
-;                         ^ branch adds 24 to this address and stores it in PC
+; Jump to a location. Location is an absolute address
 ; Branch is a compile-only word. 
 native "branch", branch
-    add pc, [pc]
-    add pc, 8
+    mov pc, [pc]
     jmp next
 
 ; Jump to a location if TOS = 0. Location is calculated in a similar way
-; F.e.: |xt_branch|   24 | <next command> 
-;                         ^ branch adds 24 to this address and stores it in PC
 ; 0branch is a compile-only word. 
 native "0branch", branch0
     pop rax
     test rax, rax
     jnz .skip
-    add pc, [pc]
+    mov pc, [pc]
+    jmp next
     .skip:
     add pc, 8
     jmp next
@@ -362,7 +450,7 @@ native "!", write
 
 ; ( val addr -- ) 
 ; Store value by address
-native "!c", write_char
+native "c!", write_char
     pop rax
     pop rdx
     mov [rax], dl 
@@ -370,7 +458,7 @@ native "!c", write_char
 
 ; ( addr -- char )
 ; Read one byte starting at addr
-native "@c", fetch_char
+native "c@", fetch_char
     pop rax
     movzx rax, byte [rax]
     push rax
@@ -386,14 +474,14 @@ native ",", comma
 
 ; ( c -- )
 ; Add a single byte to the word being defined
-native "c,", char_comma
+native "c,", char_comma, 1
     mov rax, [here]
     pop rdx 
     mov [rax], dl 
     add qword[here], 1
     jmp next
 
-; ( name flags --  )
+; ( flags name --  )
 ; Create an entry in the dictionary
 ; name is the new name 
 ; only immediate flag is implemented ATM 
@@ -442,11 +530,11 @@ colon ";", semicolon, 1
     dq xt_lit, xt_exit, xt_comma
     dq xt_exit
    
-colon "IMMEDIATE", immediate 
-    dq xt_lit, 1
-    dq xt_last_word, xt_fetch, xt_cfa, xt_lit, 1, xt_minus
-    dq xt_write_char
-    dq xt_exit
+; colon "IMMEDIATE", immediate 
+;    dq xt_lit, 1
+;    dq xt_last_word, xt_fetch, xt_cfa, xt_lit, 1, xt_minus
+;    dq xt_write_char
+;    dq xt_exit
 
 colon "info", info
     dq xt_dup
@@ -478,15 +566,15 @@ interpreter_stub:
 ; Check the 'branch' and 'branch0' macros in 'macro.inc'
 colon "interpreter", interpreter
 .start: 
-; ( inbuf )
+    ; ( inbuf )
     dq xt_dup, xt_find       ; find in dict
 
-; ( inbuf dictaddr )
+    ; ( inbuf dictaddr )
     dq xt_dup
     branch0 .number  ; if not found, try to parse as a number
     dq xt_cfa
 
-; ( inbuf xt )
+    ; ( inbuf xt )
 
     ; if compile
     dq xt_state, xt_fetch
@@ -497,24 +585,18 @@ colon "interpreter", interpreter
     dq xt_lit, 1, xt_minus, xt_fetch_char, xt_not
     branch0 .interpreting
 
-    ; compile
-
-; ( inbuf xt )
+    ; compile ( inbuf xt )
+    dq xt_swap, xt_drop
     dq xt_comma
-    dq xt_drop
     dq xt_exit
 
-    .interpreting: 
-
-; ( inbuf xt )
+    .interpreting: ; ( inbuf xt )
     dq xt_swap, xt_drop
     dq xt_execute
     dq xt_exit
 
-    .number: 
-; ( inbuf dictaddr )
-    dq xt_drop
-    dq xt_dup
+    .number: ; ( inbuf dictaddr )
+    dq xt_drop, xt_dup
     dq xt_number ; ( inbuf num 0/1 )
     branch0 .no_word
  
@@ -525,7 +607,7 @@ colon "interpreter", interpreter
                            ; when compiling, check if it was after a branch
    
    ; ( num ) 
-    dq xt_here, xt_lit, 8, xt_minus
+    dq xt_here, xt_lit, 8, xt_minus, xt_fetch
 
    ; ( num prev_xt ) 
     dq xt_dup
@@ -537,17 +619,15 @@ colon "interpreter", interpreter
     dq xt_lit, xt_branch
     dq xt_equals, xt_not
     branch0 .is_branch
-
+    
     dq xt_lit, xt_lit, xt_comma
 
-.is_branch: 
-   ; ( num prev_xt ) 
+.is_branch: ; ( num prev_xt ) 
     dq xt_drop
     dq xt_comma
     dq xt_exit
 
-.no_word:
-    ; ( inbuf num=0 )
+.no_word: ; ( inbuf num )
     dq xt_drop
     dq xt_prints
     dq xt_lit, msg_no_such_word, xt_prints    

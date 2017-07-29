@@ -2,24 +2,19 @@
 %macro native 3
     section .data
     wh_ %+ %2 : dq _lw
-    %define _lw wh %+ %2
     db 0  ; to mark the name start
     db %1, 0
     db %3
     
-    
+    %define _lw wh_%+ %2 
     xt_ %+ %2 :  dq i_ %+ %2 
     section .text
     i_ %+ %2:
-    %define _lw wh_%+ %2 
 %endmacro
 
 %macro native 2
 native %1, %2, 0
 %endmacro
-
-section .data
-newline: db 10, 0
 
 %macro colon 3
 section .data 
@@ -30,11 +25,7 @@ section .data
     db %1, 0
     db %3
     
-    
     xt_ %+ %2 : dq i_docol
-    ;dq xt_show_stack
-    ;dq xt_lit, str_ %+ %2, xt_prints
-    ;dq xt_lit, newline, xt_prints
 %endmacro
 
 %macro colon 2
@@ -62,11 +53,11 @@ native %%__cnst_str, %1
 
 %macro branch 1 
 dq xt_branch
-dq %1 - $ - 8
+dq %1
 %endmacro
 
 %macro branch0 1 
 dq xt_branch0
-dq %1 - $ - 8
+dq %1 
 %endmacro
 

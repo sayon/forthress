@@ -45,5 +45,6 @@ next:
     mov w, [w]
     jmp [w]
 
-_start: jmp i_init
+_start: 
+    jmp i_init
 
