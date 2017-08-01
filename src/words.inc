@@ -16,7 +16,8 @@ colon "'", tick, 1
 	dq xt_word
 	dq xt_drop
 	dq xt_inbuf
-	dq xt_find
+	dq xt_find, xt_dup
+    branch0 .no_such_word
 	dq xt_cfa
     dq xt_state, xt_fetch
     branch0 .interpret
@@ -25,44 +26,10 @@ colon "'", tick, 1
     dq xt_comma
 .interpret:
 	dq xt_exit
-
-
-_cfa:
-    mov rsi, rdi
-    add rsi, 9
-    .loop:
-    mov al, [rsi]
-    test al, al
-    jz .end
-    inc rsi
-    jmp .loop
-
-    .end:
-    add rsi, 2
-    mov rax, rsi
-ret
-
-native "dump", dump
-    mov rdi, [last_word]
-.loop:
-    push rdi
-    add rdi, 9
-    call print_string
-    mov rdi, ':'
-    call print_char
-    mov rdi, [rsp]
-    call _cfa
-    mov rdi, rax
-    call print_int
-    mov rdi, 10 
-    call print_char
-
-    pop rdi
-
-    mov rdi, [rdi]
-    test rdi, rdi
-    jnz .loop
-    jmp next
+    .no_such_word:
+    dq xt_inbuf, xt_prints
+    dq xt_lit, msg_no_such_word, xt_prints
+    dq xt_exit
 
     ; ( a -- )
 native "drop", drop
@@ -152,11 +119,64 @@ native "=", equals
     push rax
     jmp next
 
+native "<", lt 
+    pop rdx
+    pop rax
+    cmp rax, rdx
+    setl al
+    movzx rax, al
+    push rax
+    jmp next
+
+native ">", gt 
+    pop rdx
+    pop rax
+    cmp rax, rdx
+    setg al
+    movzx rax, al
+    push rax
+    jmp next
+
+native "and", and
+    pop rax
+    pop rdx
+    and rax, rdx
+    push rax
+    jmp next
+
+native "or", or
+    pop rax
+    pop rdx
+    or rax, rdx
+    push rax
+    jmp next
+
+native "land", land
+    pop rax
+    pop rdx
+    test rax, rax
+    jz .no
+    push rdx
+    jmp next
+.no:
+    push rax
+    jmp next
+
+native "lor", lor
+    pop rax
+    pop rdx
+    test rax, rax
+    jnz .yes
+    push rdx
+    jmp next
+.yes:
+    push rax
+    jmp next
+
 ; Drops element from stack and sends it to stdout
 native ".", dot
     pop rdi
     call print_int
-    call print_newline
     jmp next
 
 ; Shows stack contents. Does not pop elements
@@ -178,6 +198,7 @@ section .data
     stack_base: dq 0
 
 native "init", init
+    call setup_trap
     mov qword [state], 0
     mov rstack, rstack_start
     mov pc, interpreter_stub
@@ -189,39 +210,47 @@ native "init", init
     mov [stack_base], rsp
     jmp next    
 
-; This is the implementation of any colon-word.
-; The XT itself is not used, but the implementation (i_docol) is.
-
-native "docol", docol
+i_docol:
     rpush pc
     add w, 8
     mov pc, w
     jmp next
 
-; Exit from colon word
+_trap:
+    push qword [stack_base]
+    push rdx
+    mov rax, xt_trap_dispatch
+    mov w, rax
+    jmp [rax]
+
+colon "trap_dispatch", trap_dispatch
+    dq xt_lit, trapword
+    dq xt_find, xt_cfa, xt_execute
+    dq xt_bye 
+   
+colon "trap", trap
+    dq xt_lit, trapword
+    dq xt_prints, xt_lit, 10, xt_emit
+    dq xt_exit
+
 native "exit", exit
     rpop pc
     jmp next
 
-; Pop from data stack into return stack
 native ">r", to_r
     pop rax
     rpush rax
     jmp next
 
-; Push from return stack into data stack
 native "r>", from_r
     rpop rax
     push rax
     jmp next
 
-; Non-destructive copy from the top of return stack 
-; to the top of data stack
 native "r@", r_fetch
     push qword [rstack]
     jmp next
  
-    
 ; ( str -- header_addr )
 native "find", find
     mov rsi, [last_word]
@@ -262,46 +291,12 @@ native "cfa", cfa
     push rsi
     jmp next
 
-native "afc", afc
-    pop rsi
-    sub rsi, 3
-    .loop:
-    mov al, [rsi]
-    test al, al
-    jz .end
-    dec rsi
-    jmp .loop
-    .end:
-    push rsi
-    sub rsi, 8
-    jmp next
-
-; colon "infoxt", infoxt
-; dq xt_afc
-; dq xt_lit, 9, xt_plus, xt_dup, xt_prints 
-; dq xt_lit, 20, xt_emit
-; 
-; colon "info", infoxt
-; dq xt_find, xt_dup
-; dq xt_lit, 9, xt_plus, xt_prints, xt_lit, ':', xt_emit
-; dq xt_cfa 
-; dq xt_lit, 8, xt_plus
-; .loop:
-; dq xt_dup, xt_fetch
-; dq xt_dup, xt_lit, xt_exit, xt_equals, xt_not
-; branch0 .loop
-
-
-;
-
 ; ( c -- )
 ; Outputs a single character to stdout
 native "emit", emit
     pop rdi
     call print_char
     jmp next
- 
-
 
 ; ( addr -- len ) 
 ; Reads word from stdin and stores it starting at address  
@@ -349,25 +344,17 @@ colon "printc", printc
 
 colon "prints", prints
      dq xt_dup, xt_count, xt_printc, xt_exit
-; native "prints", prints
-    ; pop rdi
-    ; call print_string
-    ; jmp next
 
 ; Exits Forthress
-native "bye", bye
-    mov rax, 60
-    mov rdi, 0
-    syscall
-
-;dq xt_lit, 60
-;   dq xt_lit, 0
-;   dq xt_lit, 0
-;   dq xt_lit, 0
-;   dq xt_lit, 0
-;   dq xt_lit, 0
-;   dq xt_lit, 0
-;   dq xt_syscall
+colon "bye", bye
+   dq xt_lit, 60
+   dq xt_lit, 0
+   dq xt_lit, 0
+   dq xt_lit, 0
+   dq xt_lit, 0
+   dq xt_lit, 0
+   dq xt_lit, 0
+   dq xt_syscall
 
 ; ( call_num a1 a2 a3 a4 a5 a6 -- new_rax new_rdx )
 ; Executes syscall
@@ -474,7 +461,7 @@ native ",", comma
 
 ; ( c -- )
 ; Add a single byte to the word being defined
-native "c,", char_comma, 1
+native "c,", char_comma
     mov rax, [here]
     pop rdx 
     mov [rax], dl 
@@ -530,12 +517,6 @@ colon ";", semicolon, 1
     dq xt_lit, xt_exit, xt_comma
     dq xt_exit
    
-; colon "IMMEDIATE", immediate 
-;    dq xt_lit, 1
-;    dq xt_last_word, xt_fetch, xt_cfa, xt_lit, 1, xt_minus
-;    dq xt_write_char
-;    dq xt_exit
-
 colon "info", info
     dq xt_dup
     dq xt_find, xt_dup
@@ -604,8 +585,7 @@ colon "interpreter", interpreter
     dq xt_swap, xt_drop
     dq xt_state, xt_fetch  ; if interpreting, that's it
     branch0 .exit
-                           ; when compiling, check if it was after a branch
-   
+                           ; when compiling, check if it was after a branch 
    ; ( num ) 
     dq xt_here, xt_lit, 8, xt_minus, xt_fetch
 
