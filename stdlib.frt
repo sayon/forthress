@@ -31,8 +31,10 @@
 : readc inbuf readc@ drop inbuf c@ ;
 
 : ( repeat readc 41 - not until ; IMMEDIATE
+
 ( Now we can define comments :) 
 
+: \ repeat readc 10 not until ; IMMEDIATE 
 : -rot swap >r swap  r> ;
 
 : over >r dup r> swap ;
@@ -193,7 +195,7 @@ until r> drop ;
 : trap cr ."  Exception!\n" ;
 
 ( File I/O )
-: O_APPEND 0x 1000 ; 
+: O_APPEND 0x 400 ; 
 : O_CREAT 0x 40 ; 
 : O_TRUNC 0x 200 ; 
 : O_RDWR 0x 2 ; 
@@ -201,14 +203,19 @@ until r> drop ;
 : O_RDONLY 0x 0 ; 
 
 : sys_open_no 2 ;
+
 : sys_open  >r >r >r sys_open_no r> r> r> 0 0 0 syscall drop ;
 
 : sys_close_no 3 ;
 : sys_close  >r sys_close_no r> 0 0 0 0 0 syscall drop ;
 
-: fopen O_APPEND O_CREAT O_RDWR  or or 08x 777 sys_open ;
-: fclose sys_close ;
+: file-create O_RDWR O_CREAT O_TRUNC or or  08x 700 sys_open ;
+: file-open-append O_APPEND O_RDWR O_CREAT or or  08x 700 sys_open ;
+: file-close sys_close ;
 
 ( fd string - ) 
-: fprint count sys_write ;
+: file-print count sys_write ;
+ 
+( include! )
+: test " out.txt" file-open dup " test" dup file-print drop file-close ; test
 
