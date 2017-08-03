@@ -13,5 +13,5 @@ extern string_equals
 extern read_char
 extern read_word
 extern string_copy
-
+extern in_fd
 %endif

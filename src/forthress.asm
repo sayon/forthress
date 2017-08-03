@@ -34,6 +34,7 @@ state: resq 1
 section .data 
 last_word: dq _lw
 here: dq user_dict
+dp: dq user_mem 
 
 section .rodata
 msg_no_such_word: db ": no such word", 10, 0

@@ -291,6 +291,7 @@ native "cfa", cfa
     push rsi
     jmp next
 
+
 ; ( c -- )
 ; Outputs a single character to stdout
 native "emit", emit
@@ -411,6 +412,8 @@ const last_word, last_word
 const state, state
 
 const here, [here]
+const in_fd, in_fd
+const dp, dp 
 
 ; ( xt -- )
 ; Execute word with this execution token on TOS
@@ -531,21 +534,32 @@ colon "info", info
 
 section .rodata
 interpreter_stub: 
+    dq xt_lit, 0    ; stdin 
+    dq xt_interpret_fd 
+    dq xt_bye
 
+colon "interpret-fd", interpret_fd
+    dq xt_lit, in_fd, xt_fetch, xt_to_r
+    dq xt_lit, in_fd
+    dq xt_write
+    .loop:
     dq xt_inbuf, xt_word
     branch0 .end_of_input
 
     dq xt_inbuf
-    dq xt_interpreter
+    dq xt_interpret
 
-    branch interpreter_stub
+    branch .loop 
 
     .end_of_input:
-    dq xt_bye
+    dq xt_from_r
+    dq xt_lit, in_fd, xt_write
+    dq xt_exit
+
 
 ; Forthress interpreter 
 ; Check the 'branch' and 'branch0' macros in 'macro.inc'
-colon "interpreter", interpreter
+colon "interpret", interpret
 .start: 
     ; ( inbuf )
     dq xt_dup, xt_find       ; find in dict

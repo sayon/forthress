@@ -10,6 +10,10 @@ global string_equals
 global read_char
 global read_word
 global string_copy
+global in_fd
+
+section .data
+in_fd: dq 0
 
 section .text
 string_length:
@@ -131,7 +135,7 @@ string_equals:
 read_char:
     push 0
     xor rax, rax
-    xor rdi, rdi
+    mov rdi, [in_fd]
     mov rsi, rsp 
     mov rdx, 1
     syscall
