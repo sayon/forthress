@@ -210,7 +210,7 @@ native "init", init
     mov [stack_base], rsp
     jmp next    
 
-i_docol:
+native "docol", docol
     rpush pc
     add w, 8
     mov pc, w
