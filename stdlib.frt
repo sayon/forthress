@@ -1,5 +1,6 @@
 : IMMEDIATE  last_word @ cfa 1 - dup @ 1 or swap c! ;
-
+: cell 8 ;
+: cells cell * ;
 : begin here ; IMMEDIATE
 : again ' branch , , ; IMMEDIATE
 
@@ -21,20 +22,19 @@
 ' r> , ' drop , 
  ;  IMMEDIATE
 
-: sys_read_no 0 ;
-: sys_write_no 1 ;
+: sys-read-no 0 ;
+: sys-write-no 1 ;
 
-: sys_read  >r >r >r sys_read_no r> r> r> 0 0 0  syscall drop ; 
-: sys_write >r >r >r sys_write_no r> r> r> 0 0 0  syscall drop ;
+: sys-read  >r >r >r sys-read-no r> r> r> 0 0 0  syscall drop ; 
+: sys-write >r >r >r sys-write-no r> r> r> 0 0 0  syscall drop ;
 
-: readc@ 0 swap 1 sys_read ; 
+: readc@ in_fd @ swap 1 sys-read ; 
 : readc inbuf readc@ drop inbuf c@ ;
 
 : ( repeat readc 41 - not until ; IMMEDIATE
 
 ( Now we can define comments :) 
 
-: \ repeat readc 10 not until ; IMMEDIATE 
 : -rot swap >r swap  r> ;
 
 : over >r dup r> swap ;
@@ -47,7 +47,7 @@
 
 
 ( num from to -- 1/0) 
-: in_range rot swap over >= -rot <= land ;
+: in-range rot swap over >= -rot <= land ;
 
 ( 1 if we are compiling )
 : compiling state @ ;
@@ -116,21 +116,21 @@ then ; IMMEDIATE
 
 
 
-: read_digit readc dup .' 0 .' 9 in_range if .' 0 - else drop -1 then ;
-: read_hex_digit 
-readc dup .' 0 .' 9 in_range if 
+: read-digit readc dup .' 0 .' 9 in-range if .' 0 - else drop -1 then ;
+: read-hex-digit 
+readc dup .' 0 .' 9 in-range if 
     .' 0 - 
-    else dup .' a .' f in_range if 
+    else dup .' a .' f in-range if 
     .' a - 10 +
-    else dup .' A .' F in_range if 
+    else dup .' A .' F in-range if 
     .' A - 10 +
     else
     drop -1 then 
     then 
 then ;
 
-: read_oct_digit 
-readc dup .' 0 .' 7 in_range if 
+: read-oct-digit 
+readc dup .' 0 .' 7 in-range if 
     .' 0 - 
     else
     drop -1 
@@ -138,7 +138,7 @@ then ;
 
 : 08x 0
 repeat 
-read_oct_digit dup -1 = if
+read-oct-digit dup -1 = if
     else 
     swap 8 * swap + 
     0
@@ -150,7 +150,7 @@ compnumber
 ( adds hexadecimal literals )
 : 0x 0
 repeat 
-read_hex_digit dup -1 = if
+read-hex-digit dup -1 = if
     else 
     swap 16 * swap + 
     0
@@ -161,39 +161,6 @@ compnumber
 ; IMMEDIATE
 
 
-
-( diagnostics )
-: info dup 9 + prints ." : " cfa . cr ; 
-: dump last_word @
-repeat 
-dup info @ 
-dup not until ;
-
-: word_foreach >r last_word @
-repeat 
-dup r@ execute @ 
-dup not until r> ;
-
-: word_any >r last_word @
-repeat 
-dup r@ execute 
-if dup 
-else @ dup not 
-then
-until r> drop ;
-
-: is_word >r last_word @
-repeat 
-dup cfa r@  = 
-if dup 
-else @ dup not  
-then
-until r> drop ;
-
-: decompile is_word dup if ." <" 9 + prints ." >" cr else . cr then ;
-
-: trap cr ."  Exception!\n" ;
-
 ( File I/O )
 : O_APPEND 0x 400 ; 
 : O_CREAT 0x 40 ; 
@@ -202,20 +169,40 @@ until r> drop ;
 : O_WRONLY 0x 1 ; 
 : O_RDONLY 0x 0 ; 
 
-: sys_open_no 2 ;
+: sys-open-no 2 ;
 
-: sys_open  >r >r >r sys_open_no r> r> r> 0 0 0 syscall drop ;
+: sys-open  >r >r >r sys-open-no r> r> r> 0 0 0 syscall drop ;
 
-: sys_close_no 3 ;
-: sys_close  >r sys_close_no r> 0 0 0 0 0 syscall drop ;
+: sys-close-no 3 ;
+: sys-close  >r sys-close-no r> 0 0 0 0 0 syscall drop ;
 
-: file-create O_RDWR O_CREAT O_TRUNC or or  08x 700 sys_open ;
-: file-open-append O_APPEND O_RDWR O_CREAT or or  08x 700 sys_open ;
-: file-close sys_close ;
+: file-create O_RDWR O_CREAT O_TRUNC or or  08x 700 sys-open ;
+: file-open-append O_APPEND O_RDWR O_CREAT or or  08x 700 sys-open ;
+: file-close sys-close drop ;
 
 ( fd string - ) 
-: file-print count sys_write ;
+: file-print count sys-write ;
  
-( include! )
-: test " out.txt" file-open dup " test" dup file-print drop file-close ; test
+: include 
+    inbuf word drop 
+    inbuf file-open-append >r 
+    r@ interpret-fd
+    r@ file-close 
+    r> drop ;
+
+( cells - addr )
+: allot dp @ swap over + dp ! ;
+
+: global inbuf word drop 0  inbuf create ' docol @ , ' lit , cell allot , ' exit ,  ;  
+
+: MB 1024 dup * * ;
+
+include diagnostics.frt
+
+4 MB ( heap size )
+include heap.frt 
+
+drop
+
+
 
