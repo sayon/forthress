@@ -29,7 +29,7 @@ global heap-size
 : heap-chunk-capacity heap-chunk-size heap-header-size - ;
 
 ( a - a )
-: >is-free cell + ;
+: >is-free cell% + ;
 
 ( a - )
 : heap-chunk-set-free swap >is-free ! ;
@@ -96,6 +96,7 @@ global heap-size
 
 ( sz - addr )
 : heap-alloc
+heap-header-size + 
 dup heap-first-free-of-size dup if 
         ( sz a )
         swap 2dup heap-chunk-should-split  if 
@@ -105,6 +106,7 @@ dup heap-first-free-of-size dup if
             drop
         then 
         0 heap-chunk-set-free
+		heap-header-size + 
     else
         drop drop 0
     then ;
