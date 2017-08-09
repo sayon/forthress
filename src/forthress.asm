@@ -54,6 +54,7 @@ _start:
 ; ------------------------------------------------
 
 %define SA_RESTORER 0x04000000
+%define SA_SIGINFO  0x00000004
 %define __NR_rt_sigaction	0x0D
 %define SIGSEGV		0x0B
 setup_trap:
@@ -70,7 +71,7 @@ trapword: db "trap", 0
 
 sa:
 	.handler  	dq _trap
-	.flags		dq SA_RESTORER	
+	.flags		dq SA_RESTORER | SA_SIGINFO
 	.restorer	dq 0
 	.val	    dq 0
 
