@@ -28,3 +28,21 @@ c@ >r r@ swap c!
 
 : string-new dup count 1 + heap-alloc swap string-copy ;
 
+( string in heap )
+: h" compiling not if 
+    0 
+    repeat readc dup .' " = if 
+        drop 
+        dup dp @ + 0 swap c!
+        1 + heap-alloc dup dp @ string-copy 1 
+    else 
+        >r dup dp @ + r> swap c! 
+        1 + 
+    0
+    then
+    until 
+else
+' " execute ' dup , ' string-new ,
+then
+; IMMEDIATE 
+

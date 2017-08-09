@@ -7,7 +7,7 @@
 # ------------------------------------------------
 
 ASM			= nasm
-FLAGS		= -felf64 -g -Isrc/
+FLAGS		= -felf64 -g -Isrc/ 
 LINKER 		= ld
 
 all: bin/forthress

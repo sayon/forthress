@@ -45,9 +45,9 @@
 : 2over >r >r dup r> swap r> swap ;
 
 : case 0 ; IMMEDIATE
-: of ' over , ' = , ' if execute ; IMMEDIATE
+: of ' over , ' = , ' if execute ' drop , ; IMMEDIATE
 : endof ' else execute ; IMMEDIATE
-: endcase dup if repeat ' then execute dup not until drop then ' drop ,  ; IMMEDIATE
+: endcase ' drop , dup if repeat ' then execute dup not until drop then  ; IMMEDIATE
 
 : <= 2dup < -rot =  lor ;
 : >= 2dup > -rot = lor ;
@@ -179,8 +179,11 @@ compnumber
 : global inbuf word drop 0  inbuf create ' docol @ , ' lit , cell% allot , ' exit ,  ;  
 : constant inbuf word drop 0 inbuf create ' docol @ , ' lit , , ' exit , ;
 : struct 0 ; 
-: field over constant + ;
-: end-struct constant ;
+: field over inbuf word drop 0 inbuf create ' docol @ , ' lit , , ' + ,  ' exit , + ; 
+
+
+: end-struct constant  ;
+
 
 : MB 1024 dup * * ;
 
@@ -192,6 +195,13 @@ include diagnostics.frt
 include heap.frt 
 drop
 
-
 include string.frt  
-include lisp.frt 
+: enum 0 repeat 
+inbuf word drop dup
+0 inbuf create ' docol @ , ' lit , ,  ' exit , 
+1 + 
+" end"
+inbuf string-eq until drop ;
+
+
+include lisp.frt

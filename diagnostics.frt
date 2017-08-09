@@ -27,6 +27,6 @@ else @ dup not
 then
 until r> drop ;
 
-: decompile is_word dup if ." <" 9 + prints ." >" cr else . cr then ;
+: decompile is_word dup if ." <" 9 + prints ." >" else . then ;
 
 : trap cr ."  Exception!\n" ;

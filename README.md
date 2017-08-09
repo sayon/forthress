@@ -58,9 +58,9 @@ which will be out in 2017 thanks to [APress](http://apress.com).
   The XT itself is not used, but the implementation (`i_docol`) is.
 * `exit`
   Exit from colon word. 
-* `>r`
-  Push from return stack into data stack.
 * `r>`
+  Push from return stack into data stack.
+* `>r`
   Pop from data stack into return stack.
 * `r@`
   Non-destructive copy from the top of return stack 
@@ -125,22 +125,22 @@ which will be out in 2017 thanks to [APress](http://apress.com).
   ( addr -- value )
   Fetch value from memory.
 * `!`
-  ( val addr -- ) 
+  ( addr val -- ) 
   Store value by address.
 * `!c`
-  ( char addr -- ) 
+  ( addr char -- ) 
   Store one byte by address.
 * `@c`
   ( addr -- char )
   Read one byte starting at addr.
 * `,`
   ( x -- ) 
-  Add x to the word being define.
+  Add x to the word being defined.
 * `c,`
   ( c -- )
   Add a single byte to the word being defined.
 * `create`
-  ( name flags --  )
+  ( flags name --  )
   Create an entry in the dictionary
   name is the new name.
   Only immediate flag is implemented ATM.
