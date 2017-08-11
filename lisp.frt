@@ -62,7 +62,7 @@ include lisp-expr.frt
         lisp-builtin-xt @ decompile 
         endof
     lisp-compound-tag-value of 
-        ." (lambda (" dup lisp-compound-args @ recurse ." ) (" lis-compound-body @ recurse ." )"
+        ." (lambda (" dup lisp-compound-args @ recurse ." ) (" lisp-compound-body @ recurse ." )"
         endof
     endcase  
     else ." nil " drop  drop 
@@ -128,9 +128,7 @@ then
         lisp-symbol-name @ symtab-lookup symtab-lisp @  
     then ;
 
-' lisp-eval-pair lisp-pair-tag-value cells lisp-eval-dispatch  + !
-
-
+' lisp-eval-symbol lisp-symbol-tag-value cells lisp-eval-dispatch  + !
 
 : lisp-helper-unpack-pair lisp-pair-destruct lisp-pair-car @ lisp-number-value @  swap lisp-number-value @ swap ;
 : lisp-builtin-+ lisp-helper-unpack-pair + lisp-number ;   
@@ -142,10 +140,8 @@ then
 
 
 
-
 : symtab-init 
-    " hello" 0 symtab-add 
     " other" 0 symtab-add 
+    " hello" 4 lisp-number  symtab-add 
 ; symtab-init
-
 
