@@ -23,6 +23,7 @@ end-struct lisp-pair%
         r@ lisp-pair-car !  
     then r> ;
 ;
+: lisp-pair? @ lisp-pair-tag-value = ;
 
 struct
     cell% field lisp-number-tag
@@ -37,6 +38,7 @@ end-struct lisp-number%
     then r> ;
 ;
 
+: lisp-number? @ lisp-number-tag-value = ;
 struct
     cell% field lisp-builtin-tag
     cell% field lisp-builtin-xt
@@ -89,3 +91,42 @@ end-struct lisp-compound%
         r@ lisp-compound-body !
         r@ lisp-compound-args !
     then r> ; 
+
+
+lisp-max-tag-value cells allot constant lisp-show-dispatch 
+
+: lisp-show 
+    dup if 
+        dup @ cells lisp-show-dispatch + @ execute
+        else ." nil " drop
+    then
+;
+
+: lisp-show-pair 
+        dup ." (" lisp-pair-car @ lisp-show ."  " lisp-pair-cdr @ lisp-show ." )" ;
+
+: lisp-show-number 
+    lisp-number-value @ . ." i" ;
+
+: lisp-show-symbol
+    lisp-symbol-name  @ prints ;
+
+: lisp-show-builtin
+    lisp-builtin-xt @ decompile ;
+
+: lisp-show-special
+    ." ^" lisp-special-xt @ decompile ;
+
+: lisp-show-compound 
+   ." (lambda (" dup lisp-compound-args @ lisp-show ." ) (" lisp-compound-body @ lisp-show ." )" ;
+
+
+' lisp-show-number   lisp-number-tag-value     cells lisp-show-dispatch + !
+' lisp-show-pair     lisp-pair-tag-value       cells lisp-show-dispatch + !
+' lisp-show-symbol   lisp-symbol-tag-value     cells lisp-show-dispatch + !
+' lisp-show-builtin  lisp-builtin-tag-value    cells lisp-show-dispatch + !
+' lisp-show-special  lisp-special-tag-value    cells lisp-show-dispatch + !
+' lisp-show-compound lisp-compound-tag-value   cells lisp-show-dispatch + !
+
+
+( todo: equality )

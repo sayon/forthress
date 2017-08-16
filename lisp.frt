@@ -1,11 +1,7 @@
 ( Lisp interpreter written in Forthress )
 
-struct 
-	cell% field >next
-end-struct llist%
-
 struct
-    llist% field symtab-next
+    cell% field symtab-next
     cell% field symtab-name
     cell% field symtab-lisp
 end-struct symtab%
@@ -18,17 +14,6 @@ global symtab-first
 	r@ symtab-lisp   !
 	r@ symtab-name  !
  	r> symtab-first !
-;
-
-: symtab-show ( a  - )
-	dup ." at " . ." : " dup symtab-name @ ?prints ."  ("
-	symtab-next @ . ." )" 
-;
-
-: symtab-dump symtab-first 
-    repeat 
-    @ dup if dup symtab-show ." ;  " 0 else drop 1 then 
-    until 
 ;
 
 
@@ -46,102 +31,59 @@ global symtab-first
 
 include lisp-expr.frt
 
-: lisp-show rec
-    dup dup if @ case 
-    lisp-pair-tag-value of 
-        dup 
-        ." (" lisp-pair-car @ recurse ."  " lisp-pair-cdr @ recurse ." )" 
-       endof
-    lisp-number-tag-value of 
-        lisp-number-value @ .       
-        endof
-    lisp-symbol-tag-value of 
-        lisp-symbol-name  @ prints  
-        endof
-    lisp-builtin-tag-value of 
-        lisp-builtin-xt @ decompile 
-        endof
-    lisp-compound-tag-value of 
-        ." (lambda (" dup lisp-compound-args @ recurse ." ) (" lisp-compound-body @ recurse ." )"
-        endof
-    endcase  
-    else ." nil " drop  drop 
-    then 
-;
-
-
-lisp-max-tag-value cells allot constant lisp-eval-dispatch 
-
-
-: lisp-eval ( lisp - lisp )
-." eval: " dup lisp-show cr
-dup if 
-	dup @ cells lisp-eval-dispatch + @ execute
-then
-;
-
-: lisp-eval-number ( lisp - lisp )
-    ." eval: number " dup lisp-number-value @ .  cr 
+: symtab-show ( a  - )
+	dup . ." : " dup symtab-name @ ?prints 
+    ."  := "  symtab-lisp @ lisp-show 
     ;
 
-' lisp-eval-number lisp-number-tag-value cells lisp-eval-dispatch + !
-
-: lisp-eval-list rec ( lisp - lisp )
-    ." eval list " dup lisp-show  cr
-    dup if
-        dup lisp-pair-car @ lisp-eval swap lisp-pair-cdr  @ recurse lisp-pair 
-    then ;
-
-
-: lisp-apply-func ( fun args -- lisp )
-    ." eval: apply function "
-    swap dup @ case 
-        lisp-builtin-tag-value of 
-            ." builtin " dup lisp-show  over ."  to " lisp-show cr 
-
-            lisp-builtin-xt @  
-            swap lisp-eval-list swap 
-            ." eval: executing... "
-            execute 
-            endof 
-        lisp-special-tag-value of 
-            lisp-special-xt @ execute 
-            endof 
-        ." Apply not implemented" cr
-        endcase
+: symtab-dump symtab-first 
+    repeat 
+    symtab-next @ 
+    dup if 
+        dup symtab-show cr 0 
+        else drop 1 
+    then 
+    until
 ;
 
-: lisp-pair-destruct ( lisp - lisp lisp )
-    dup lisp-pair-car @ swap lisp-pair-cdr @ ;
-
-: lisp-eval-pair  ( lisp - lisp )    
-    ." eval: pair " cr 
-    dup if
-        dup lisp-pair-car @ swap lisp-pair-cdr @ lisp-apply-func 
-    then ;
-
-' lisp-eval-pair lisp-pair-tag-value cells lisp-eval-dispatch  + !
-
-: lisp-eval-symbol ( lisp - lisp )    
-    ." eval: symbol " cr 
-    dup if
-        lisp-symbol-name @ symtab-lookup symtab-lisp @  
-    then ;
-
-' lisp-eval-symbol lisp-symbol-tag-value cells lisp-eval-dispatch  + !
-
-: lisp-helper-unpack-pair lisp-pair-destruct lisp-pair-car @ lisp-number-value @  swap lisp-number-value @ swap ;
-: lisp-builtin-+ lisp-helper-unpack-pair + lisp-number ;   
-: lisp-builtin-- lisp-helper-unpack-pair - lisp-number ;   
-: lisp-builtin-* lisp-helper-unpack-pair * lisp-number ;   
-: lisp-builtin-/ lisp-helper-unpack-pair / lisp-number ;   
-
-( ' lisp-builtin-- lisp-builtin 42 lisp-number 2 lisp-number 0 lisp-pair lisp-pair lisp-pair dup lisp-show lisp-eval cr lisp-show)
-
-
+include lisp-eval.frt
 
 : symtab-init 
-    " other" 0 symtab-add 
-    " hello" 4 lisp-number  symtab-add 
-; symtab-init
+    0 symtab-first !
+    " define"   ' lisp-special-define-xt lisp-special symtab-add 
+    " quote"    ' lisp-special-quote-xt lisp-special symtab-add 
+    " set!"     ' lisp-builtin-set!-xt lisp-builtin symtab-add 
+    " +"        ' lisp-builtin-+ lisp-builtin symtab-add 
+    " -"        ' lisp-builtin-- lisp-builtin symtab-add 
+    " *"        ' lisp-builtin-* lisp-builtin symtab-add 
+    " /"        ' lisp-builtin-/ lisp-builtin symtab-add 
+; symtab-init  
+
+(  
+ h" define" lisp-symbol h" x" lisp-symbol 42 lisp-number lisp-pair lisp-pair dup
+lisp-show cr
+lisp-eval cr
+lisp-show cr
+symtab-dump cr
+
+." vars " cr
+global quote    h" quote" lisp-symbol quote !
+global set!     h" set!" lisp-symbol set! !
+
+." shows:" cr
+set! @ quote @ x @ lisp-pair 44 lisp-number lisp-pair lisp-pair  dup lisp-show   cr cr
+lisp-eval 
+symtab-dump cr )
+
+global x        h" x" lisp-symbol x !
+global y        h" y" lisp-symbol y !
+
+( body )
+x @ y @ 0 lisp-pair lisp-pair 
+h" +" lisp-symbol x @ y @ 0 lisp-pair lisp-pair lisp-pair 
+lisp-compound 
+
+
+4 lisp-number 5 lisp-number 0 lisp-pair lisp-pair lisp-pair dup lisp-eval lisp-show
+
 

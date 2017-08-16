@@ -11,7 +11,7 @@ c@ >r r@ swap c!
 	until  
 2drop ;
 : ?dup dup if dup then ; 
-: ?prints dup if prints else " <NULL> " then ;
+: ?prints dup if prints else " <NULL> " drop then ;
 : string-eq ( s1 s2 - )
 	repeat
 	over c@ over c@ = if ( x[i] = y[i] ) 
