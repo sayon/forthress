@@ -229,7 +229,3 @@ include string.frt
     inbuf string-eq until drop ;
 
 include lisp.frt
-
-
-
-
