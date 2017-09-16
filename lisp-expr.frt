@@ -5,6 +5,7 @@ enum
     lisp-symbol-tag-value
     lisp-special-tag-value
     lisp-compound-tag-value
+    lisp-error-tag-value
     lisp-max-tag-value
 end
 
@@ -23,6 +24,7 @@ end-struct lisp-pair%
         r@ lisp-pair-car !  
     then r> ;
 ;
+
 : lisp-pair? @ lisp-pair-tag-value = ;
 
 struct
@@ -92,41 +94,20 @@ end-struct lisp-compound%
         r@ lisp-compound-args !
     then r> ; 
 
+struct
+    cell% field lisp-error-tag
+    cell% field lisp-error-str
+    cell% field lisp-error-lisp
+end-struct lisp-error%
 
-lisp-max-tag-value cells allot constant lisp-show-dispatch 
-
-: lisp-show 
-    dup if 
-        dup @ cells lisp-show-dispatch + @ execute
-        else ." nil " drop
-    then
+: lisp-error ( str lisp - a )
+    lisp-error% heap-alloc dup >r if 
+        lisp-error-tag-value 
+        r@ lisp-error-tag !
+        r@ lisp-error-lisp !
+        r@ lisp-error-str  !
+    then r> ;
 ;
-
-: lisp-show-pair 
-        dup ." (" lisp-pair-car @ lisp-show ."  " lisp-pair-cdr @ lisp-show ." )" ;
-
-: lisp-show-number 
-    lisp-number-value @ . ." i" ;
-
-: lisp-show-symbol
-    lisp-symbol-name  @ prints ;
-
-: lisp-show-builtin
-    lisp-builtin-xt @ decompile ;
-
-: lisp-show-special
-    ." ^" lisp-special-xt @ decompile ;
-
-: lisp-show-compound 
-   ." (lambda (" dup lisp-compound-args @ lisp-show ." ) (" lisp-compound-body @ lisp-show ." )" ;
-
-
-' lisp-show-number   lisp-number-tag-value     cells lisp-show-dispatch + !
-' lisp-show-pair     lisp-pair-tag-value       cells lisp-show-dispatch + !
-' lisp-show-symbol   lisp-symbol-tag-value     cells lisp-show-dispatch + !
-' lisp-show-builtin  lisp-builtin-tag-value    cells lisp-show-dispatch + !
-' lisp-show-special  lisp-special-tag-value    cells lisp-show-dispatch + !
-' lisp-show-compound lisp-compound-tag-value   cells lisp-show-dispatch + !
 
 
 ( todo: equality )

@@ -43,7 +43,7 @@
 : 2dup over over ;
 : 2drop drop drop ;
 : 2over >r >r dup r> swap r> swap ;
-
+( FIXME case is bugged ) 
 : case 0 ; IMMEDIATE
 : of ' over , ' = , ' if execute ' drop , ; IMMEDIATE
 : endof ' else execute ; IMMEDIATE
@@ -161,6 +161,7 @@ compnumber
 
 : file-create O_RDWR O_CREAT O_TRUNC or or  08x 700 sys-open ;
 : file-open-append O_APPEND O_RDWR O_CREAT or or  08x 700 sys-open ;
+: file-open-read  O_RDONLY 08x 700 sys-open ;
 : file-close sys-close drop ;
 
 ( fd string - ) 
@@ -180,28 +181,55 @@ compnumber
 : constant inbuf word drop 0 inbuf create ' docol @ , ' lit , , ' exit , ;
 : struct 0 ; 
 : field over inbuf word drop 0 inbuf create ' docol @ , ' lit , , ' + ,  ' exit , + ; 
-
-
 : end-struct constant  ;
 
+: read-char-fd ( fd mem - c ) 
+     dup >r 1 sys-read drop r> c@ ; 
 
-: MB 1024 dup * * ;
+: read-line-fd ( fd addr - ) repeat
+    2dup read-char-fd dup .' ! emit emit  dup 10 = not land if
+           1 +  0 
+        else 0 swap c! drop  1 then  
+    until ; 
+
+: KB 1024 * ;
+: MB KB KB  ;
+
+256 KB constant max-file-size 
+max-file-size allot constant read-file-buffer 
+
+: file-read-text ( fd - a ) 
+    read-file-buffer max-file-size sys-read .S
+    read-file-buffer + 0 swap c!  
+    read-file-buffer ;
+
+: file-read-text-name ( name - a ) 
+    file-open-read dup
+    read-file-buffer max-file-size sys-read
+    read-file-buffer + 0 swap c!  
+    file-close 
+    read-file-buffer ;
+
 
 include recursion.frt
 include diagnostics.frt
 
 
-4 MB ( heap size )
+16 MB ( heap size )
 include heap.frt 
 drop
 
 include string.frt  
-: enum 0 repeat 
-inbuf word drop dup
-0 inbuf create ' docol @ , ' lit , ,  ' exit , 
-1 + 
-" end"
-inbuf string-eq until drop ;
 
+: enum 0 repeat 
+    inbuf word drop dup
+    0 inbuf create ' docol @ , ' lit , ,  ' exit , 
+    1 + 
+    " end"
+    inbuf string-eq until drop ;
 
 include lisp.frt
+
+
+
+

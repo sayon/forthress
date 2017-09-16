@@ -1,17 +1,21 @@
 : 2inc ( x y -- x+1 y+1 )
 	>r 1 + r> 1 + ;
 
+: mcopy ( s d - s+1 d+1 ) over c@ over c! 2inc ;
+
 : string-copy ( d s -  )
 	repeat 
 	2dup 
-( d s d s - )
-c@ >r r@ swap c!
+    ( d s d s - )
+    c@ >r r@ swap c!
 	2inc
     r> not
 	until  
 2drop ;
 : ?dup dup if dup then ; 
 : ?prints dup if prints else " <NULL> " drop then ;
+
+
 : string-eq ( s1 s2 - )
 	repeat
 	over c@ over c@ = if ( x[i] = y[i] ) 
@@ -26,7 +30,19 @@ c@ >r r@ swap c!
 	until
 ;
 
-: string-new dup count 1 + heap-alloc swap string-copy ;
+: string-prefix ( s1 prefix - )
+	repeat
+    dup c@ if 
+        over c@ over c@ = not if ( x[i] = y[i] ) 
+            2drop 0 1 
+            else 2inc 0  ( continue )
+            then 
+    else 2drop 1 1 then
+	until
+;
+
+: string-new ( buf - a ) 
+    dup count 1 + heap-alloc ( buf a ) >r r@ swap string-copy r> ;
 
 ( string in heap )
 : h" compiling not if 

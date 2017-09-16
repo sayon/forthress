@@ -50,14 +50,8 @@ native "dup", dup
     jmp next
 
 ; ( a b c -- b c a )
-native "rot", rot
-    pop rcx
-    pop rdx
-    pop rax
-    push rdx
-    push rcx
-    push rax
-    jmp next
+colon "rot", rot
+    dq xt_to_r, xt_swap, xt_from_r, xt_swap, xt_exit
 
 ; ( y x -- [ x + y ] )
 native "+", plus
@@ -128,27 +122,17 @@ native "<", lt
     push rax
     jmp next
 
-native ">", gt 
-    pop rdx
-    pop rax
-    cmp rax, rdx
-    setg al
-    movzx rax, al
-    push rax
-    jmp next
+colon ">", gt 
+    dq xt_lt, xt_not, xt_exit
 
 native "and", and
     pop rax
-    pop rdx
-    and rax, rdx
-    push rax
+    and [rsp], rax
     jmp next
 
 native "or", or
     pop rax
-    pop rdx
-    or rax, rdx
-    push rax
+    or [rsp], rax
     jmp next
 
 native "land", land
