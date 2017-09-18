@@ -11,9 +11,10 @@
         r> .' ( = not land  
         ;
 
-: char-ident-tail  ( c - b ) dup
-        char-is-ws not  swap
-        .' ) = not land ;
+: char-ident-tail  ( c - b ) >r
+        r@ char-is-ws not 
+        r@ .' ) = not land 
+        r> land ;
 
 struct 
     cell% field parser-position
@@ -109,13 +110,17 @@ dup parser-position @
         parse-skip-ws
         " )" parse-keyword if 
             r> 1 1
-        else parse-lisp if r> lisp-pair >r 0 else 0 1 then 
+        else 
+            parse-lisp if 
+                 r> lisp-pair >r 0 else r> drop 0 1 then 
         then
     until
     else 0
 then ;
 
-: parse-list parse-list-rev if 
+: parse-list parse-list-rev 
+.S ." AFTER LIST-REV" cr 
+if 
    0 >r
     repeat 
         dup if 
@@ -127,11 +132,19 @@ then ;
 
 
 : parse-expr parse-skip-ws  
-    parse-number if lisp-number 1 else
-    parse-list if 1 else
-    " nil" parse-keyword if 0 1 else 
-    parse-symbol if lisp-symbol 1 then then then then ;
+    parse-number if lisp-number 1 
+." NUMBER " cr 
+else
+    parse-list if 1 
+    ." LIST " cr
+else
+    " nil" parse-keyword if 0 1 
+." NIL KEYWORD" cr
+else 
+    parse-symbol if ." symbol!" lisp-symbol 1 then then then then ;
 
 ' parse-expr parse-lisp-helper !
 
-h" +" parser-new .S cr parse-symbol
+h" ( + 1 2)" parser-new parse-lisp . cr lisp-show 
+cr ." end"
+
