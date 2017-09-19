@@ -77,7 +77,7 @@ global parse-lisp-helper
 
 
 
-: parse-symbol ( parser - parser heap-str 1 | parser 0 )  
+: parse-symbol ( parser - parser symbol 1 | parser 0 )  
 dup parser-position @ 
     inbuf 
     ( parser src dst )
@@ -90,9 +90,10 @@ dup parser-position @
             over parser-position !  1  
             then 
         until
-    inbuf string-new
+    inbuf string-new lisp-symbol
     1
-    else 2drop 0
+    else 2drop 
+." Can't find symbol here \n" .S  0
     then 
 ;
 
@@ -111,7 +112,9 @@ dup parser-position @
         " )" parse-keyword if 
             r> 1 1
         else 
-            parse-lisp if 
+            parse-lisp if
+                ." LISP: " 
+                dup lisp-show cr 
                  r> lisp-pair >r 0 else r> drop 0 1 then 
         then
     until
@@ -119,8 +122,8 @@ dup parser-position @
 then ;
 
 : parse-list parse-list-rev 
-.S ." AFTER LIST-REV" cr 
 if 
+lisp-show cr
    0 >r
     repeat 
         dup if 
@@ -141,7 +144,7 @@ else
     " nil" parse-keyword if 0 1 
 ." NIL KEYWORD" cr
 else 
-    parse-symbol if ." symbol!" lisp-symbol 1 then then then then ;
+    parse-symbol if ." symbol!" 1 then then then then ;
 
 ' parse-expr parse-lisp-helper !
 
