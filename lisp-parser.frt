@@ -121,18 +121,19 @@ dup parser-position @
     else 0
 then ;
 
-: parse-list parse-list-rev 
-if 
-lisp-show cr
+: lisp-list-reverse 
+dup if 
    0 >r
     repeat 
         dup if 
-            lisp-pair-destruct  swap r> lisp-pair >r 0
-        else drop r> 1 1 
+            lisp-pair-destruct swap r> lisp-pair >r 0
+        else drop r> 1 
         then   
     until 
-then ;
+then 
+;
 
+: parse-list parse-list-rev if lisp-list-reverse 1 else 0 then ;
 
 : parse-expr parse-skip-ws  
     parse-number if lisp-number 1 
@@ -148,6 +149,4 @@ else
 
 ' parse-expr parse-lisp-helper !
 
-h" ( + 1 2)" parser-new parse-lisp . cr lisp-show 
-cr ." end"
 
