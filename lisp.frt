@@ -96,8 +96,6 @@ h" +" lisp-symbol x @ y @ 0 lisp-pair lisp-pair lisp-pair
 lisp-compound 
 
 
-4 lisp-number 5 lisp-number 0 lisp-pair lisp-pair lisp-pair dup lisp-eval lisp-show
-
 symtab-dump cr
 
 
@@ -110,3 +108,4 @@ symtab-dump cr
 
 ( h" lsp.lsp" lisp-process-file  )
  
+h" (define x 42)" parser-new parse-lisp .S drop lisp-show 

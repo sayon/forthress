@@ -22,10 +22,15 @@ end-struct parser%
 
 : parser-info dup @ prints cr ;
 
+: parser-destroy heap-free ;
+
 : parser-new ( buf - parser ) 
     parser% heap-alloc  dup >r  
     parser-position ! 
     r> ; 
+
+: parser-copy ( parser - parser parser )
+    dup parser-position @ parser-new ;
 
 : parser-peek ( parser - parser char ) 
     dup parser-position @ c@ 
@@ -63,20 +68,6 @@ global parse-lisp-helper
 
 : parse-lisp parse-lisp-helper @ execute ;
 
-: parse-pair  ( parser - parser lisp 0/1 )
-    .' ( parse-char if ( list start ) 
-        parse-skip-ws parse-lisp if  >r 
-        parse-skip-ws parse-lisp if  >r 
-                parse-skip-ws .' ) parse-char if 
-                    r> r> swap lisp-pair  1 
-                    else r> r> 2drop 0 then 
-                else r> r> 2drop 0 then 
-            else r> drop 0 then
-        else 0 then ;
-
-
-
-
 : parse-symbol ( parser - parser symbol 1 | parser 0 )  
 dup parser-position @ 
     inbuf 
@@ -112,10 +103,7 @@ dup parser-position @
         " )" parse-keyword if 
             r> 1 1
         else 
-            parse-lisp if
-                ." LISP: " 
-                dup lisp-show cr 
-                 r> lisp-pair >r 0 else r> drop 0 1 then 
+            parser-copy parse-lisp if rot parser-destroy  r> lisp-pair >r 0 else r> drop 0 1 then 
         then
     until
     else 0
@@ -133,19 +121,36 @@ dup if
 then 
 ;
 
-: parse-list parse-list-rev if lisp-list-reverse 1 else 0 then ;
+: parse-list ( parser - parser 0 | parser list 1 )
+    parse-list-rev if lisp-list-reverse 1 else 0 then ;
+
+: parse-pair ( parser - parser 0 | parser pair 1 )
+    " (" parse-keyword if
+        parse-lisp if 
+            >r " ." parse-keyword if
+                   parse-lisp if
+                       >r " )" parse-keyword if  
+                            r> r> swap lisp-pair 1  
+                       else r> r> drop drop 0 
+                   else r> drop 0
+            else r> drop 0
+        else 0
+    else 0
+    then then then then then ;
+
 
 : parse-expr parse-skip-ws  
-    parse-number if lisp-number 1 
-." NUMBER " cr 
-else
-    parse-list if 1 
-    ." LIST " cr
-else
-    " nil" parse-keyword if 0 1 
-." NIL KEYWORD" cr
-else 
-    parse-symbol if ." symbol!" 1 then then then then ;
+        parse-number if lisp-number 1 
+    else
+        parser-copy parse-list if rot parser-destroy 1 
+    else parser-destroy 
+        parser-copy parse-pair if rot parser-destroy  1 
+    else parser-destroy 
+        " nil" parse-keyword if 0 1 
+    else 
+        parse-symbol if 1 
+    else 0
+then then then then then ;
 
 ' parse-expr parse-lisp-helper !
 

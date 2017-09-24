@@ -228,4 +228,10 @@ include string.frt
     " end"
     inbuf string-eq until drop ;
 
-include lisp.frt
+( include lisp.frt )
+
+0x 100 heap-alloc 0x 200 heap-alloc 0x 400 heap-alloc  .S
+cr cr
+swap heap-free 
+0x 100 heap-alloc .S 
+
