@@ -30,7 +30,7 @@
 	until
 ;
 
-: string-prefix ( s1 prefix - )
+: string-prefix ( s1 prefix -  0 1)
 	repeat
     dup c@ if 
         over c@ over c@ = not if ( x[i] = y[i] ) 

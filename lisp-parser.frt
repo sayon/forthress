@@ -16,33 +16,18 @@
         r@ .' ) = not land 
         r> land ;
 
-struct 
-    cell% field parser-position
-end-struct parser%
 
-: parser-info dup @ prints cr ;
-
-: parser-destroy heap-free ;
-
-: parser-new ( buf - parser ) 
-    parser% heap-alloc  dup >r  
-    parser-position ! 
-    r> ; 
-
-: parser-copy ( parser - parser parser )
-    dup parser-position @ parser-new ;
+: parser-info dup prints cr ;
 
 : parser-peek ( parser - parser char ) 
-    dup parser-position @ c@ 
-    ;
-
-: parser-advance ( parser n - parser ) 
-    >r dup parser-position dup @ r> + swap ! 
-    ;
+    dup c@ ;
+: parser-advance ( parser n - parser ) + ;
 : parser-next ( parser - parser ) 1 parser-advance ;
+: parse-char-class ( parser checker - parser char 1 | parser 0 )
+    >r parser-peek dup r> execute if swap parser-next swap 1 else drop 0 then ;
 
 : parse-digit ( parser - parser digit 1 or parser 0 ) 
-    parser-peek dup char-is-digit if swap parser-next swap 1 else drop 0 then ;  
+    ' char-is-digit parse-char-class ;
 
 : parse-number ( parser - parser number 1 or parser 0 ) 
     parse-digit if
@@ -68,32 +53,29 @@ global parse-lisp-helper
 
 : parse-lisp parse-lisp-helper @ execute ;
 
-: parse-symbol ( parser - parser symbol 1 | parser 0 )  
-dup parser-position @ 
-    inbuf 
-    ( parser src dst )
-    over c@ char-ident-start if  
-    mcopy
-        repeat
-        over c@ char-ident-tail if 
-            mcopy 0
-            else 0 over c! drop 
-            over parser-position !  1  
-            then 
-        until
-    inbuf string-new lisp-symbol
-    1
-    else 2drop 
-." Can't find symbol here \n" .S  0
-    then 
+: parse-symbol ( parser - parser 0 | parser lisp 1 )
+' char-ident-start parse-char-class if 
+    inbuf c! inbuf 1 + >r 
+    repeat
+    ' char-ident-tail parse-char-class if
+         r@ c!
+         r> parser-next >r 
+         0 
+        else 0 r> c!
+        inbuf string-new lisp-symbol
+        1 1
+        then
+    until 
+else
+." Can't find symbol here \n" parser-info 0  cr 
+then
 ;
 
 : parse-keyword ( parser str  - parser 0/1 )
-    >r dup parser-position @ r@  
-    string-prefix if    
-        r> count parser-advance 1
+    2dup string-prefix if    
+        count parser-advance 1
         else
-        r> drop 0
+        drop 0
         then ;
 
 : parse-list-rev " (" parse-keyword if
@@ -103,7 +85,11 @@ dup parser-position @
         " )" parse-keyword if 
             r> 1 1
         else 
-            parser-copy parse-lisp if rot parser-destroy  r> lisp-pair >r 0 else r> drop 0 1 then 
+            parse-lisp if 
+                r> lisp-pair >r 0 
+            else 
+                r> drop ( fixme: lisp-destroy instead of drop ) 
+                0 1 then 
         then
     until
     else 0
@@ -126,14 +112,16 @@ then
 
 : parse-pair ( parser - parser 0 | parser pair 1 )
     " (" parse-keyword if
-        parse-lisp if 
-            >r " ." parse-keyword if
+        parse-lisp if
+            >r  
+            " ." parse-keyword if
                    parse-lisp if
-                       >r " )" parse-keyword if  
-                            r> r> swap lisp-pair 1  
-                       else r> r> drop drop 0 
+                       >r 
+                        " )" parse-keyword if  
+                            r> r> lisp-pair 1  
+                       else r> drop 0 
                    else r> drop 0
-            else r> drop 0
+            else 0
         else 0
     else 0
     then then then then then ;
@@ -142,16 +130,17 @@ then
 : parse-expr parse-skip-ws  
         parse-number if lisp-number 1 
     else
-        parser-copy parse-list if rot parser-destroy 1 
-    else parser-destroy 
-        parser-copy parse-pair if rot parser-destroy  1 
-    else parser-destroy 
+        dup >r parse-list if r> drop 1 
+    else drop r>  
+        ( dup >r parse-pair if r> drop 1 
+    else drop r>  )
         " nil" parse-keyword if 0 1 
     else 
         parse-symbol if 1 
     else 0
-then then then then then ;
+then then then then ( then ) ;
 
 ' parse-expr parse-lisp-helper !
 
 
+h" (hello hey)" parse-list .S

@@ -67,15 +67,6 @@ include lisp-parser.frt
 : string-empty? c@ not ; 
 
 
-: lisp-process-file ( fd - ) 
-    file-read-text-name
-        parser-new parse-lisp if
-                dup ." lisp: " lisp-show cr
-                lisp-eval 
-                else  
-            ." ERROR " cr 
-            then
-        ; 
 
 
 ( 
@@ -108,4 +99,3 @@ symtab-dump cr
 
 ( h" lsp.lsp" lisp-process-file  )
  
-h" (define x 42)" parser-new parse-lisp .S drop lisp-show 
