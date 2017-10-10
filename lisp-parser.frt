@@ -8,12 +8,14 @@
 : char-ident-start ( c - b ) >r
         r@ char-is-digit not 
         r@ .' ) = not land  
+        r@ .' . = not land  
         r> .' ( = not land  
         ;
 
 : char-ident-tail  ( c - b ) >r
         r@ char-is-ws not 
         r@ .' ) = not land 
+        r@ .' . = not land  
         r> land ;
 
 
@@ -67,7 +69,7 @@ global parse-lisp-helper
         then
     until 
 else
-." Can't find symbol here \n" parser-info 0  cr 
+0 
 then
 ;
 
@@ -108,39 +110,44 @@ then
 ;
 
 : parse-list ( parser - parser 0 | parser list 1 )
-    parse-list-rev if lisp-list-reverse 1 else 0 then ;
+dup >r 
+    parse-list-rev if r> drop lisp-list-reverse 1 else drop r> 0 then ;
 
 : parse-pair ( parser - parser 0 | parser pair 1 )
-    " (" parse-keyword if
-        parse-lisp if
+    dup >r " (" parse-keyword if
+        (  parse-lisp  )
+        parse-symbol
+        if
             >r  
             " ." parse-keyword if
-                   parse-lisp if
+                   ( parse-lisp )
+                    parse-symbol
+                         if
                        >r 
                         " )" parse-keyword if  
-                            r> r> lisp-pair 1  
-                       else r> drop 0 
-                   else r> drop 0
-            else 0
-        else 0
-    else 0
+                            r> r> lisp-pair r> drop  1  
+                       else r> drop drop r>  0 
+                   else r> drop drop r> 0
+            else drop r> 0
+
+        else drop r> 0
+
+    else drop r> 0
     then then then then then ;
 
 
 : parse-expr parse-skip-ws  
         parse-number if lisp-number 1 
     else
-        dup >r parse-list if r> drop 1 
-    else drop r>  
-        ( dup >r parse-pair if r> drop 1 
-    else drop r>  )
+        parse-list if 1 
+    else  
         " nil" parse-keyword if 0 1 
     else 
         parse-symbol if 1 
     else 0
-then then then then ( then ) ;
+then then then  then  ;
 
 ' parse-expr parse-lisp-helper !
 
 
-h" (hello hey)" parse-list .S
+999 h" (abc . uu )" parse-list . cr lisp-show  cr .S
