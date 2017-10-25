@@ -113,41 +113,36 @@ then
 dup >r 
     parse-list-rev if r> drop lisp-list-reverse 1 else drop r> 0 then ;
 
-: parse-pair ( parser - parser 0 | parser pair 1 )
-    dup >r " (" parse-keyword if
-        (  parse-lisp  )
-        parse-symbol
-        if
-            >r  
-            " ." parse-keyword if
-                   ( parse-lisp )
-                    parse-symbol
-                         if
-                       >r 
-                        " )" parse-keyword if  
-                            r> r> lisp-pair r> drop  1  
-                       else r> drop drop r>  0 
-                   else r> drop drop r> 0
-            else drop r> 0
+: parse-pair-aux ( parser - parser 0 | parser pair 1 )
+    " (" parse-keyword if
+            parse-skip-ws parse-lisp if
+      swap parse-skip-ws " ." parse-keyword if
+                    parse-skip-ws parse-lisp if
+        swap parse-skip-ws " )" parse-keyword if  
+        >r lisp-pair r> swap 1  
+        else drop drop  0 then
+       else  drop  0 then
+     else drop  0 then
+    else 0 then 
+    else 0 then 
+    ;
 
-        else drop r> 0
-
-    else drop r> 0
-    then then then then then ;
-
+: parse-pair
+    dup >r parse-pair-aux if r> drop 1 else drop r> 0 then ;
 
 : parse-expr parse-skip-ws  
         parse-number if lisp-number 1 
     else
+        parse-pair if 1
+    else 
         parse-list if 1 
     else  
         " nil" parse-keyword if 0 1 
     else 
         parse-symbol if 1 
     else 0
-then then then  then  ;
+then then then then then  ;
 
 ' parse-expr parse-lisp-helper !
 
 
-999 h" (abc . uu )" parse-list . cr lisp-show  cr .S
