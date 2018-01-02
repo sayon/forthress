@@ -7,12 +7,12 @@ lisp-max-tag-value cells allot constant lisp-eval-dispatch
     then ;
 
 
-: lisp-eval-number ( lisp - lisp )
-    ( ." eval: number "  dup lisp-show cr  ) ;
+: lisp-eval-number ( lisp - lisp ) ;
+: lisp-eval-bool  ( lisp - lisp ) ; 
 
-
-: lisp-pair-destruct ( lisp - lisp lisp )
-    dup lisp-pair-car @ swap lisp-pair-cdr @ ;
+: lisp-fun2 lisp-pair-destruct lisp-pair-destruct drop ;
+: lisp-fun1 lisp-pair-car @ ;
+: lisp-2head lisp-fun2 ; 
 
 : lisp-eval-list rec ( lisp - lisp )
     ( ." eval list " dup lisp-show  cr ) 
@@ -45,31 +45,30 @@ swap lisp-eval swap recurse lisp-pair
     then ;
 
 : lisp-apply-func ( fun args -- lisp )
-    ( ." eval: apply function " ) 
-    swap dup @ case 
+     ( ." eval: apply function "  2dup swap lisp-show  ."  to " lisp-show cr )
+    swap lisp-eval dup @ case 
         lisp-builtin-tag-value of 
-            ( ." builtin " dup lisp-show ."  to " over  lisp-show cr  ) 
-            
+            ( ." builtin " dup lisp-show ."  to " over  lisp-show cr   )
+            >r lisp-eval-list r> 
             lisp-builtin-xt @ 
-            ( ." eval: executing  " dup decompile  ." " cr)
+            ( ." eval: executing  " dup decompile  ." " cr )
             execute 
             endof 
         lisp-special-tag-value of 
-            ( ." special " ) 
+             ( ." special "  )
             lisp-special-xt @ 
-            ( dup decompile )
+            ( dup decompile  cr )
             execute 
             endof 
         lisp-compound-tag-value of 
-            ( ." compound " dup lisp-show  over ."  to " lisp-show cr ) 
+             ( ." compound " dup lisp-show  over ."  to " lisp-show cr  )
             ( args fun )
             symtab-save >r 
             dup >r
             ( args fun , fun )
             lisp-compound-args @
-            ( ." binding now " cr )
+             ( ." binding now " cr ) 
             swap  lisp-eval-list lisp-bind-args 
-             
             ( symtab-dump )
             r> lisp-compound-body @ lisp-eval 
             r> symtab-restore 
@@ -80,18 +79,25 @@ swap lisp-eval swap recurse lisp-pair
 : lisp-noeval ( lisp - lisp ) ;
 
 : lisp-eval-pair  ( lisp - lisp )    
-    ( ." eval: pair " dup lisp-show cr ) 
+    ( ." eval: pair " dup lisp-show cr  )
      dup if
-        lisp-pair-destruct swap lisp-eval  swap lisp-eval-list lisp-apply-func 
+        lisp-pair-destruct lisp-apply-func 
     then ;
 
 : lisp-error-no-such-symbol 
     ( lisp - lisp )
     " No such symbol" swap lisp-error ;
 
+: lisp-error-invalid-type 
+    ( lisp - lisp )
+    " The type of expression is invaild: " swap lisp-error ;
+
+: lisp-error-no-valid-condition
+    ( lisp - lisp )
+    " `cond` should have at least one valid branch" swap lisp-error ;
+;
 
 : lisp-eval-symbol ( lisp - lisp )    
-    ( ." eval: symbol " cr )
     dup if
         lisp-symbol-name @ dup symtab-lookup dup if 
             swap drop symtab-lisp @  
@@ -113,34 +119,109 @@ swap lisp-eval swap recurse lisp-pair
     drop r> drop ;
 
 : lisp-list-reducewith ( action lisp ) 
-    lisp-pair-destruct >r lisp-number-value @ r>  lisp-list-fold  
+    lisp-pair-destruct >r lisp-number-value @ r>  lisp-list-fold 
 ;
 
 : lisp-helper-binop swap lisp-list-reducewith lisp-number ; 
-( : lisp-builtin-+ ' + lisp-helper-binop ;  )
-: lisp-builtin-+ dup lisp-pair-car @ lisp-number-value @  swap lisp-pair-cdr @ lisp-pair-car @ lisp-number-value @ + lisp-number ;  
+
+: lisp-builtin-+ ' + lisp-helper-binop ; 
 : lisp-builtin-- ' - lisp-helper-binop ; 
 : lisp-builtin-* ' * lisp-helper-binop ; 
 : lisp-builtin-/ ' / lisp-helper-binop ; 
 
 : lisp-builtin-nil 0 ; 
 : lisp-special-define-xt ( lisp - lisp ) 
-    lisp-pair-destruct swap lisp-symbol-name @ swap lisp-eval dup >r symtab-add r> ; 
+    lisp-2head 
+    swap lisp-symbol-name @ swap lisp-eval dup >r symtab-add r> drop  lisp-unspecific ; 
 
-: lisp-builtin-set-xt ( lisp - lisp ) 
-    lisp-pair-destruct lisp-eval swap lisp-symbol-name @ dup symtab-lookup dup if 
-         symtab-lisp ! drop 
-        else drop lisp-error-no-such-symbol 
-        then ; 
+: lisp-special-set!-xt ( lisp - lisp ) 
+    lisp-2head 
+    lisp-eval swap 
+    dup lisp-symbol? if 
+        lisp-symbol-name @ symtab-lookup dup if 
+         symtab-lisp ! 
+            else 
+            drop lisp-error-no-such-symbol
+            then 
+    else drop lisp-error-no-such-symbol 
+        then lisp-unspecific ; 
 
-: lisp-special-quote-xt ( lisp - ) ;
-: lisp-builtin-print lisp-show ;
+: lisp-special-quote-xt lisp-pair-destruct drop ( lisp - lisp ) ;
 
-: lisp-builtin-lambda  ( lisp - lisp ) 
-    lisp-pair-destruct lisp-compound ;
+: lisp-special-begin-xt ( lisp - lisp )
+( ." eval begin" cr ) 
+    lisp-unspecific >r 
+    dup if 
+        repeat
+            lisp-pair-destruct swap lisp-eval r> drop >r 
+            
+        dup not 
+        until
+        drop r> 
+    else r> then  
+;
+   
+ 
+: lisp-builtin-print 
+ lisp-pair-destruct drop 
+    dup if 
+        dup lisp-string? if
+        lisp-string-value @ prints
+    else
+    lisp-show 
+    then
+    else lisp-show
+then lisp-unspecific ;
+
+: lisp-builtin-eql 
+    lisp-2head lisp-eq lisp-bool 
+;
+
+
+: lisp-error-change-expr ( error? newlisp - newerror | oldnoterror ) 
+    swap >r  ( newlisp , error?) 
+    r@ lisp-error? if
+       r@ lisp-error-lisp ! r> 
+    else drop r>  
+then ;
+
+
+: lisp-special-cond-r rec
+dup if 
+    lisp-pair-destruct swap ( tail head  ) 
+    lisp-pair-destruct lisp-pair-destruct drop swap 
+    ( tail hexpr hcond )
+     lisp-eval lisp-is-true if 
+            swap drop lisp-eval 
+        else
+            drop recurse
+        then   
+    else 
+        lisp-error-no-valid-condition
+    then
+;
+
+: lisp-special-cond ( lisp - lisp )
+    dup lisp-special-cond-r swap 
+
+    lisp-error-change-expr 
+
+;
+    
+: lisp-special-lambda  ( lisp - lisp ) 
+    lisp-pair-destruct lisp-pair-destruct drop lisp-compound ;
 
 ' lisp-eval-symbol    lisp-symbol-tag-value     cells lisp-eval-dispatch + !
 ' lisp-eval-pair      lisp-pair-tag-value       cells lisp-eval-dispatch + !
-' lisp-eval-number    lisp-number-tag-value     cells lisp-eval-dispatch + !
+' lisp-noeval         lisp-number-tag-value     cells lisp-eval-dispatch + !
 ' lisp-noeval         lisp-compound-tag-value   cells lisp-eval-dispatch + !
 ' lisp-noeval         lisp-error-tag-value      cells lisp-eval-dispatch + !
+' lisp-noeval         lisp-string-tag-value     cells lisp-eval-dispatch + !
+' lisp-noeval         lisp-bool-tag-value       cells lisp-eval-dispatch + !
+' lisp-noeval         lisp-unspecific-tag-value cells lisp-eval-dispatch + !
+
+
+: lisp-builtin-symbol? lisp-fun1 lisp-symbol? lisp-bool ;
+: lisp-builtin-error? lisp-fun1 lisp-error? lisp-bool ;
+: lisp-builtin-string? lisp-fun1 lisp-string? lisp-bool ;
+: lisp-builtin-pair? lisp-fun1 lisp-pair? lisp-bool ;

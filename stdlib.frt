@@ -23,7 +23,6 @@
  ;  IMMEDIATE
 
 
-
 : sys-read-no 0 ;
 : sys-write-no 1 ;
 
@@ -49,6 +48,7 @@
 : endof ' else execute ; IMMEDIATE
 : endcase ' drop , dup if repeat ' then execute dup not until drop then  ; IMMEDIATE
 
+: <> = not ; 
 : <= 2dup < -rot =  lor ;
 : >= 2dup > -rot = lor ;
 
@@ -74,6 +74,29 @@
 ;
 
 : cr 10 emit ; 
+
+
+: _" compiling if 
+     ' branch , here 0 , here 
+            repeat 
+                readc dup 34 = 
+                if 
+                    drop
+                    0 c, ( null terminator )
+                    ( label_to_link string_start )
+                    swap
+                    ( string_start label_to_link )
+                    here swap ! 
+                    ( string_start )
+                    ' lit , , 1
+                else c, 0 
+                then 
+            until
+else
+repeat
+     readce dup 34 = if drop 1 else emit 0 then 
+until  
+then ; IMMEDIATE
 
 : " compiling if 
      ' branch , here 0 , here 
@@ -187,7 +210,7 @@ compnumber
      dup >r 1 sys-read drop r> c@ ; 
 
 : read-line-fd ( fd addr - ) repeat
-    2dup read-char-fd dup .' ! emit emit  dup 10 = not land if
+    2dup read-char-fd dup 10 = not over 13 = not land land if
            1 +  0 
         else 0 swap c! drop  1 then  
     until ; 
@@ -197,6 +220,9 @@ compnumber
 
 256 KB constant max-file-size 
 max-file-size allot constant read-file-buffer 
+0 constant stdin
+1 constant stdout
+2 constant stderr 
 
 : file-read-text ( fd - a ) 
     read-file-buffer max-file-size sys-read .S
@@ -229,5 +255,4 @@ include string.frt
     inbuf string-eq until drop ;
 
 include lisp.frt 
-
 

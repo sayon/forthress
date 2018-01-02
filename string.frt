@@ -1,3 +1,4 @@
+
 : 2inc ( x y -- x+1 y+1 )
 	>r 1 + r> 1 + ;
 
@@ -13,7 +14,7 @@
 	until  
 2drop ;
 : ?dup dup if dup then ; 
-: ?prints dup if prints else " <NULL> " drop then ;
+: ?prints dup if prints else ." <NULL> " drop then ;
 
 
 : string-eq ( s1 s2 - )
@@ -41,6 +42,9 @@
 	until
 ;
 
+: estring-char-length ( string - length )
+    _" \n" string-prefix if 2 else 1 then ;
+
 : string-new ( buf - a ) 
     dup count 1 + heap-alloc ( buf a ) >r r@ swap string-copy r> ;
 
@@ -61,4 +65,7 @@ else
 ' " execute ' dup , ' string-new ,
 then
 ; IMMEDIATE 
+
+: string-empty? ( str - 0 1 ) 
+    c@ 0 = ; 
 

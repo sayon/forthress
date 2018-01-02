@@ -1,127 +1,53 @@
 lisp-max-tag-value cells allot constant lisp-eq-dispatch 
 
+: lisp-same-tags-2 @ swap @ = ;
+
 : lisp-eq ( lisp lisp - b )
-    ." eq: " 2dup lisp-show ."  " lisp-show cr
     2dup land if 
-        2dup @ swap @ cells lisp-eq-dispatch + @ execute
+        2dup lisp-same-tags-2 if
+            over @ cells lisp-eq-dispatch + @ execute
+        else 0
+        then
+    else 
+    = 
     then ;
+
+: lisp-eq-builtin ( lisp lisp - b ) = ;
 
 : lisp-eq-number ( lisp lisp - b )
-    lisp-number-value @ swap lisp-number-value @ = ;
-
-: lisp-pair-destruct ( lisp - lisp lisp )
-    dup lisp-pair-car @ swap lisp-pair-cdr @ ;
-
-: lisp-pairs-destruct ( l1 l2 -- tail1 tail2 head1 head2 )
-    >r lisp-pair-destruct swap r> swap >r  ( tail1 l2 , head1 )
-    lisp-pair-destruct swap r> swap  ;  
-
-: lisp-bind-args  ( args values ) rec  
-   2dup land if 
-       lisp-pairs-destruct  
-   2dup lisp-show cr lisp-show cr 
-       swap lisp-symbol-name @ swap symtab-add
-       recurse
-    else 2drop
-    then ;
-
-: lisp-apply-func ( fun args -- lisp )
-    ." eq: apply function "
-    swap dup @ case 
-        lisp-builtin-tag-value of 
-            
-            ." builtin " dup lisp-show ."  to " over  lisp-show cr 
-            
-            lisp-builtin-xt @  
-            swap lisp-eq-list swap 
-            ." eq: executing  " dup decompile  ." " cr
-            execute 
-            endof 
-        lisp-special-tag-value of 
-
-            ." special " 
-
-            lisp-special-xt @ 
-            dup decompile
-            execute 
-            endof 
-        lisp-compound-tag-value of
-
-            ." compound " dup lisp-show  over ."  to " lisp-show cr 
-
-            ( args fun )
-            symtab-save >r 
-            dup >r
-            lisp-compound-args @
-            swap lisp-bind-args 
-             
-            symtab-dump
-            r> lisp-compound-body @ lisp-eq 
-            r> symtab-restore 
-            endof
-        endcase
-cr
+    lisp-number-value @ swap lisp-number-value @ =  
 ;
 
-: lisp-noeq ( lisp - lisp ) ;
+: lisp-noeq 2drop 0 ;
 
-: lisp-eq-pair  ( lisp - lisp )    
-    ." eq: pair " cr 
-    dup if
-        dup lisp-pair-car @ lisp-eq swap lisp-pair-cdr @ lisp-apply-func 
-    then ;
+: lisp-eq-pair  
+    lisp-pair-destruct >r  ( x y1 , y2 )
+    swap lisp-pair-destruct >r ( y1 x1 , y2 x2)
+    swap lisp-eq
+    r> r> lisp-eq
+    land ;
 
+: lisp-eq-compound 
+   over lisp-compound-args @ over lisp-compound-args @ lisp-eq >r 
+   lisp-compound-body @ swap lisp-compound-body @ lisp-eq r> land 
+; 
 
-: lisp-eq-symbol ( lisp - lisp )    
-    ." eq: symbol " cr 
-    dup if
-        lisp-symbol-name @ symtab-lookup symtab-lisp @  
-    then ;
-
-
-: lisp-list-fold ( action acc list ) rot >r 
-    repeat 
-    ( acc list? )
-      dup lisp-pair? if 
-            lisp-pair-destruct -rot  
-            ( cdr acc car ) lisp-number-value @  
-            r@ execute 
-            ( cdr acc ) swap dup not 
-        else lisp-number-value @ r@ execute 0 1 
-        then 
-    until 
-    drop r> drop ;
-
-: lisp-list-reducewith ( action lisp ) 
-    lisp-pair-destruct >r lisp-number-value @ r>  lisp-list-fold  
+: lisp-eq-symbol 
+    lisp-symbol-name @ 
+    swap lisp-symbol-name @ 
+    string-eq 
 ;
 
-: lisp-helper-binop swap lisp-list-reducewith lisp-number ; 
-: lisp-builtin-+ ' + lisp-helper-binop ; 
-: lisp-builtin-- ' - lisp-helper-binop ; 
-: lisp-builtin-* ' * lisp-helper-binop ; 
-: lisp-builtin-/ ' / lisp-helper-binop ; 
-
-: lisp-special-define-xt ( lisp - lisp ) 
-    lisp-pair-destruct swap lisp-symbol-name @ swap lisp-eq dup >r symtab-add r> ; 
-
-: lisp-error-no-such-symbol 
-    ( lisp - lisp )
-    " No such symbol" swap lisp-error ;
-
-: lisp-builtin-set-xt ( lisp - lisp ) 
-    lisp-pair-destruct lisp-eq swap lisp-symbol-name @ dup symtab-lookup dup if 
-         symtab-lisp ! drop 
-        else drop lisp-error-no-such-symbol 
-        then ; 
-
-: lisp-special-quote-xt ( lisp - ) ;
-
-: lisp-builtin-lambda  ( lisp - lisp ) 
-    lisp-pair-destruct lisp-compound ; 
-    
+: lisp-eq-bool
+    lisp-is-true swap lisp-is-true = ; 
+      
 ' lisp-eq-symbol    lisp-symbol-tag-value     cells lisp-eq-dispatch + !
 ' lisp-eq-pair      lisp-pair-tag-value       cells lisp-eq-dispatch + !
 ' lisp-eq-number    lisp-number-tag-value     cells lisp-eq-dispatch + !
-' lisp-noeq         lisp-compound-tag-value   cells lisp-eq-dispatch + !
+' lisp-eq-compound  lisp-compound-tag-value   cells lisp-eq-dispatch + !
+' lisp-eq-builtin   lisp-builtin-tag-value    cells lisp-eq-dispatch + !
 ' lisp-noeq         lisp-error-tag-value      cells lisp-eq-dispatch + !
+
+' lisp-eq-bool      lisp-bool-tag-value       cells lisp-eq-dispatch + !
+
+( FIXME unspecifics can not be compared and should not be! Gotta throw invalid type error) 

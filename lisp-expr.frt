@@ -1,11 +1,14 @@
 enum 
     lisp-pair-tag-value
     lisp-number-tag-value
+    lisp-bool-tag-value
+    lisp-string-tag-value
     lisp-builtin-tag-value
     lisp-symbol-tag-value
     lisp-special-tag-value
     lisp-compound-tag-value
     lisp-error-tag-value
+    lisp-unspecific-tag-value
     lisp-max-tag-value
 end
 
@@ -27,6 +30,9 @@ end-struct lisp-pair%
 
 : lisp-pair? @ lisp-pair-tag-value = ;
 
+: lisp-pair-destruct ( lisp - lisp lisp )
+    dup lisp-pair-car @ swap lisp-pair-cdr @ ;
+
 struct
     cell% field lisp-number-tag
     cell% field lisp-number-value
@@ -41,6 +47,51 @@ end-struct lisp-number%
 ;
 
 : lisp-number? @ lisp-number-tag-value = ;
+
+struct
+    cell% field lisp-bool-tag
+    cell% field lisp-bool-value
+end-struct lisp-bool%
+
+: lisp-bool ( b - a )
+    lisp-bool% heap-alloc dup >r if 
+        lisp-bool-tag-value
+        r@ lisp-bool-tag !
+        r@ lisp-bool-value !
+    then r> ;
+;
+
+: lisp-bool? @ lisp-bool-tag-value = ;
+
+: lisp-true  1 lisp-bool ;
+
+: lisp-false 0 lisp-bool ;
+
+: lisp-is-true ( lisp - b ) dup 0 = if
+        drop 1 
+    else
+        dup lisp-bool? if
+            lisp-bool-value @ 0 = not 
+        else drop 1 
+        then
+    then ;
+    
+struct
+    cell% field lisp-string-tag
+    cell% field lisp-string-value
+end-struct lisp-string%
+
+: lisp-string ( s - a )
+    lisp-string% heap-alloc dup >r if 
+        lisp-string-tag-value 
+        r@ lisp-string-tag !
+        r@ lisp-string-value !
+    then r> ;
+;
+
+: lisp-string? @ lisp-string-tag-value = ;
+
+
 struct
     cell% field lisp-builtin-tag
     cell% field lisp-builtin-xt
@@ -79,12 +130,24 @@ end-struct lisp-symbol%
         r@ lisp-symbol-name !
     then r> ; 
 
+: lisp-symbol? @ lisp-symbol-tag-value = ;
+
+struct
+    cell% field lisp-unspecific-tag
+end-struct lisp-unspecific% 
+
+: lisp-unspecific 
+    lisp-unspecific% heap-alloc dup >r if
+        lisp-unspecific-tag-value
+        r@ lisp-unspecific-tag !
+        then r> ;
+
+
 struct
     cell% field lisp-compound-tag
     cell% field lisp-compound-args
     cell% field lisp-compound-body
 end-struct lisp-compound% 
-
 
 : lisp-compound ( args body - a ) 
     lisp-compound% heap-alloc dup >r if 
@@ -109,5 +172,5 @@ end-struct lisp-error%
     then r> ;
 ;
 
+: lisp-error? @ lisp-error-tag-value = ;
 
-( todo: equality )
