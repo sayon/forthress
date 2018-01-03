@@ -73,7 +73,9 @@ swap lisp-eval swap recurse lisp-pair
             r> lisp-compound-body @ lisp-eval 
             r> symtab-restore 
             endof
-
+        lisp-error-tag-value of
+            swap drop 
+            endof
         endcase ;
 
 : lisp-noeval ( lisp - lisp ) ;
@@ -90,7 +92,7 @@ swap lisp-eval swap recurse lisp-pair
 
 : lisp-error-invalid-type 
     ( lisp - lisp )
-    " The type of expression is invaild: " swap lisp-error ;
+    " Invalid type " swap lisp-error ;
 
 : lisp-error-no-valid-condition
     ( lisp - lisp )
@@ -99,9 +101,12 @@ swap lisp-eval swap recurse lisp-pair
 
 : lisp-eval-symbol ( lisp - lisp )    
     dup if
-        lisp-symbol-name @ dup symtab-lookup dup if 
-            swap drop symtab-lisp @  
-        else drop lisp-error-no-such-symbol then
+        ( x )
+        dup lisp-symbol-name @ symtab-lookup dup if 
+        ( x a)
+            symtab-lisp @ swap drop  
+            else drop lisp-error-no-such-symbol then
+    else lisp-error-invalid-type
     then ;
 
 
@@ -129,6 +134,19 @@ swap lisp-eval swap recurse lisp-pair
 : lisp-builtin-* ' * lisp-helper-binop ; 
 : lisp-builtin-/ ' / lisp-helper-binop ; 
 
+: lisp-2fun-nums 
+    dup lisp-number? not if 
+        swap drop lisp-error-invalid-type 0
+    else 
+        over lisp-number? not if 
+        drop lisp-error-invalid-type 0 
+            else 2drop 1 
+        then
+    then ;
+ 
+: lisp-builtin-< lisp-fun2  
+    lisp-number-value @ swap lisp-number-value @  swap < lisp-bool ;
+        
 : lisp-builtin-nil 0 ; 
 : lisp-special-define-xt ( lisp - lisp ) 
     lisp-2head 

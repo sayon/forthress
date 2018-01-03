@@ -3,8 +3,7 @@ lisp-max-tag-value cells allot constant lisp-show-dispatch
 : lisp-show 
     dup if 
         dup @ cells lisp-show-dispatch + @ execute
-        else ." nil" drop
-    then
+    else ." nil" drop then
 ;
 
 : lisp-show-pair 
@@ -34,7 +33,7 @@ lisp-max-tag-value cells allot constant lisp-show-dispatch
    ." (lambda (" dup lisp-compound-args @ lisp-show ." ) (" lisp-compound-body @ lisp-show ." )" ;
 
 : lisp-show-error 
-    ." Lisp error in " dup lisp-error-lisp @ lisp-show ." :" lisp-error-str @ prints ;
+    ." Lisp error in '" dup lisp-error-lisp @ lisp-show ." ': " lisp-error-str @ prints ;
 
 
 ' lisp-show-number   lisp-number-tag-value     cells lisp-show-dispatch + !

@@ -61,6 +61,7 @@ include lisp-eval.frt
     " -"        ' lisp-builtin--         lisp-builtin symtab-add 
     " *"        ' lisp-builtin-*         lisp-builtin symtab-add 
     " /"        ' lisp-builtin-/         lisp-builtin symtab-add 
+    " <"        ' lisp-builtin-<         lisp-builtin symtab-add 
     " print"    ' lisp-builtin-print     lisp-builtin symtab-add 
     " eql"      ' lisp-builtin-eql       lisp-builtin symtab-add 
     " cond"     ' lisp-special-cond      lisp-special symtab-add 
@@ -99,11 +100,15 @@ symtab-dump cr
 h" init.lsp" lisp-eval-file cr
 
 : lisp-repl
-    begin 
+    repeat 
+        0 read-file-buffer c!  
         stdin read-file-buffer read-line-fd 
-        read-file-buffer string-empty? not if
-                read-file-buffer 
-                lisp-eval-text cr 
-        then 
-    again ;
+        read-file-buffer " :quit" string-prefix not if 
+            read-file-buffer string-empty? not if
+                    read-file-buffer 
+                    lisp-eval-text cr 0
+            else 1 then 
+            else 1 then 
+    until ;
 
+lisp-repl
