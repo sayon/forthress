@@ -102,6 +102,7 @@ h" init.lsp" lisp-eval-file cr
 : lisp-repl
     repeat 
         0 read-file-buffer c!  
+        ." > "
         stdin read-file-buffer read-line-fd 
         read-file-buffer " :quit" string-prefix not if 
             read-file-buffer string-empty? not if
@@ -111,4 +112,3 @@ h" init.lsp" lisp-eval-file cr
             else 1 then 
     until ;
 
-lisp-repl
