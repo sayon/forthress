@@ -1,6 +1,10 @@
 : IMMEDIATE  last_word @ cfa 1 - dup @ 1 or swap c! ;
+
 : cell% 8 ;
 : cells cell% * ;
+: KB 1024 * ;
+: MB KB KB  ;
+
 : begin here ; IMMEDIATE
 : again ' branch , , ; IMMEDIATE
 
@@ -74,7 +78,7 @@ then
 ;
 
 : cr 10 emit ;
-
+: QUOTE 34 emit ;
 
 : _"
   compiling if
@@ -203,44 +207,11 @@ compnumber
 
 : global inbuf word drop 0  inbuf create ' docol @ , ' lit , cell% allot , ' exit ,  ;
 : constant inbuf word drop 0 inbuf create ' docol @ , ' lit , , ' exit , ;
+
+( a rather low-level primitive )
 : struct 0 ;
 : field over inbuf word drop 0 inbuf create ' docol @ , ' lit , , ' + ,  ' exit , + ;
 : end-struct constant  ;
-
-: read-char-fd ( fd mem - c )
-     dup >r 1 sys-read drop r> c@ ;
-
-: read-line-fd ( fd addr - ) repeat
-    2dup read-char-fd dup 10 = not over 13 = not land land if
-           1 +  0
-        else 0 swap c! drop  1 then
-    until ;
-
-: KB 1024 * ;
-: MB KB KB  ;
-
-256 KB constant max-file-size
-max-file-size allot constant read-file-buffer
-0 constant stdin
-1 constant stdout
-2 constant stderr
-
-: file-read-text ( fd - a )
-    read-file-buffer max-file-size sys-read .S
-    read-file-buffer + 0 swap c!
-    read-file-buffer ;
-
-: file-read-text-name ( name - a )
-    file-open-read dup
-    read-file-buffer max-file-size sys-read
-    read-file-buffer + 0 swap c!
-    file-close
-    read-file-buffer ;
-
-
-include recursion.frt
-include diagnostics.frt
-
 
 16 MB ( heap size )
 include heap.frt
@@ -255,5 +226,13 @@ include string.frt
     " end"
     inbuf string-eq until drop ;
 
-include lisp.frt
+
+include file.frt 
+include recursion.frt
+include diagnostics.frt
+
+include runtime-meta.frt
+include managed-string.frt
+
+( include lisp.frt )
 

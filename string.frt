@@ -45,13 +45,16 @@
 : estring-char-length ( string - length )
     _" \n" string-prefix if 2 else 1 then ;
 
+: string-allot ( ptr - allotptr)
+    dup count 1 + allot dup >r swap string-copy r> ;
+
 : string-new ( buf - a ) 
     dup count 1 + heap-alloc ( buf a ) >r r@ swap string-copy r> ;
 
 ( string in heap )
 : h" compiling not if 
     0 
-    repeat readc dup .' " = if 
+    repeat readc dup .' " = if                     (  " syntax highlight fix ) 
         drop 
         dup dp @ + 0 swap c!
         1 + heap-alloc dup dp @ string-copy 1 
