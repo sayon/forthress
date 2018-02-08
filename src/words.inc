@@ -238,6 +238,12 @@ native "r@", r_fetch
 ; ( str -- header_addr )
 native "find", find
     mov rsi, [last_word]
+    
+    ; if compiling, we have to skip the word being defined
+    mov rax, [state]
+    test rax, rax
+    jz .loop 
+    mov rsi, [rsi]
 .loop:
     mov rdi, [rsp] 
     push rsi
