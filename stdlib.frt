@@ -214,6 +214,7 @@ compnumber
 : end-struct constant  ;
 
 16 MB ( heap size )
+include diagnostics.frt
 include heap.frt
 drop
 
@@ -229,10 +230,26 @@ include string.frt
 
 include file.frt 
 include recursion.frt
-include diagnostics.frt
 
 include runtime-meta.frt
 include managed-string.frt
 
 ( include lisp.frt )
+
+
+( test zone below )
+mtype spair 
+    string :: >fst
+    string :: >snd
+mend 
+
+: spair-show 
+    ." (" QUOTE dup >fst @ prints QUOTE ." ," QUOTE >snd @ prints QUOTE ." )" 
+;
+
+' spair-show spair >meta-printer ! 
+
+
+
+m" world" m" hello" spair new 
 

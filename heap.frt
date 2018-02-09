@@ -141,14 +141,16 @@ global heap-meta-printer
     ." | next: "
     dup >chunk-next @ .
     ."  | "
-    dup >chunk-is-free  @ if ." FREE" else ." ALLOC" then
-    ."  | "
-    dup >chunk-meta @ dup if
-    ( *chunk-start *metainf )
-    over chunk-header% + swap  
-    ( *chunk-start *chunk-contents  *metainf )
-    heap-meta-printer @ execute
-    else ." <no meta> " drop then 
+    dup >chunk-is-free @ if ." FREE " else ." ALLOC" 
+            ."  | "
+            dup >chunk-meta @ dup if
+            ( *chunk-start *metainf )
+            over chunk-header% + swap  
+            ( *chunk-start *chunk-contents  *metainf )
+            
+            heap-meta-printer @ execute
+            else ." <no meta> " drop then 
+        then
     ."  | size: " 
     chunk-size . cr
 ;
@@ -171,6 +173,20 @@ global heap-meta-printer
   dup addr-in-heap over addr-not-in-first-chunk land if
         chunk-header% - >chunk-sig @ CHUNK_SIG =  
   else drop 0 then
+;
+
+: chunk-show-meta
+    dup chunk-header% - >chunk-meta @ dup if 
+    ( chunk meta - ) 
+    ." <" heap-meta-printer @ execute ." >"  
+    else drop drop 
+    then  
+;
+
+: decompile 
+   dup addr-is-chunk-start if 
+   dup . ."  " chunk-show-meta  
+  else  decompile then 
 ;
 
 heap-init 
