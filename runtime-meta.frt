@@ -132,6 +132,7 @@ mend
 ( addr -- meta )
 : addr-get-meta dup addr-is-managed if chunk-header% - >chunk-meta @ else drop 0 then ;
 
+
 : delete rec 
     dup addr-get-meta dup if ( addr meta )
         dup >meta-is-value @ not if
@@ -147,4 +148,11 @@ mend
     heap-free then 
     else drop heap-free then ;
 
- 
+( addr -- )
+: .  
+    dup addr-get-meta dup if ( addr meta )
+         over . ."    " >meta-printer @  ."   [" execute    ." ]" 
+    else drop . then 
+;
+
+
