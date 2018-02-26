@@ -17,30 +17,35 @@ global _start
 %define w r14
 %define rstack r13
 
-section .text
+section .text          
 
-%include "words.inc"
+%include "words.inc"   ;  Predefined words are here
 
 section .bss
 
-resq 1023
-rstack_start: resq 1
+; return stack end-----;
+resq 1023              ;
+rstack_start: resq 1   ;
+; return stack start---;
 
-input_buf: resb 1024
-user_dict:  resq 65536 
-user_mem: resq 65536
+input_buf: resb 1024   ; buffer to read textual words into
+user_dict:  resq 65536 ; data for words
 
-state: resq 1
+
+user_mem: resq 65536   ; global data for user
+
+state: resq 1          ; changes to 1 if compiling, 0 by default
+
 section .data 
-last_word: dq _lw
-here: dq user_dict
-dp: dq user_mem 
+last_word: dq _lw      ; stores a pointer to the last word in dictionary
+here: dq user_dict     ; current position in words memory; 
+dp: dq user_mem        ; current global data pointer 
 
 section .rodata
 msg_no_such_word: db ": no such word", 10, 0
 
 section .text
-next: 
+next:                  ; inner interpreter, fetches next word to execute
     mov w, pc
     add pc, 8
     mov w, [w]

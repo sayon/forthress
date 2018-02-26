@@ -6,11 +6,13 @@
 ; word semantics
 ;
 ; Author: igorjirkov@gmail.com
-; Date  : 15-10-2016
+; Date  : 26-02-2016
 ;
 ; ------------------------------------------------
 
 
+; Read word and place its address on stack
+; ( -- a )
 colon "'", tick, 1
 	dq xt_inbuf
 	dq xt_word
@@ -31,11 +33,13 @@ colon "'", tick, 1
     dq xt_lit, msg_no_such_word, xt_prints
     dq xt_exit
 
-    ; ( a -- )
+; Drop TOS 
+; ( a -- )
 native "drop", drop
     add rsp, 8
     jmp next
 
+; Swap two cells on top of the stack
 ; ( a b -- b a )
 native "swap", swap
     pop rax
@@ -44,14 +48,11 @@ native "swap", swap
     push rdx
     jmp next
 
+; Duplicate cell on top of the stack
 ; ( a -- a a )
 native "dup", dup
     push qword [rsp]
     jmp next
-
-; ( a b c -- b c a )
-colon "rot", rot
-    dq xt_to_r, xt_swap, xt_from_r, xt_swap, xt_exit
 
 ; ( y x -- [ x + y ] )
 native "+", plus
@@ -84,6 +85,7 @@ native "%", mod
     idiv rcx
     push rdx 
     jmp next
+
 ; ( y x -- [x - y] )
 native "-", minus
     pop rax
@@ -113,6 +115,7 @@ native "=", equals
     push rax
     jmp next
 
+; ( y x -- [x < y] )
 native "<", lt 
     pop rdx
     pop rax
@@ -122,19 +125,21 @@ native "<", lt
     push rax
     jmp next
 
-colon ">", gt 
-    dq xt_lt, xt_not, xt_exit
-
+; bitwise and
+; ( y x -- y & x )
 native "and", and
     pop rax
     and [rsp], rax
     jmp next
 
+; bitwise or
+; ( y x -- y | x )
 native "or", or
     pop rax
     or [rsp], rax
     jmp next
 
+; logic and
 native "land", land
     pop rax
     pop rdx
@@ -146,6 +151,7 @@ native "land", land
     push rax
     jmp next
 
+; logic or 
 native "lor", lor
     pop rax
     pop rdx
@@ -158,12 +164,13 @@ native "lor", lor
     jmp next
 
 ; Drops element from stack and sends it to stdout
+; ( a -- )  
 native ".", dot
     pop rdi
     call print_int
     jmp next
 
-; Shows stack contents. Does not pop elements
+; Shows all stack contents. Does not pop elements
 native ".S", show_stack
     mov rcx, rsp
     .loop:
@@ -181,6 +188,7 @@ native ".S", show_stack
 section .data
     stack_base: dq 0
 
+; Initialization routine.
 native "init", init
     call setup_trap
     mov qword [state], 0
@@ -194,28 +202,6 @@ native "init", init
     mov [stack_base], rsp
     jmp next    
 
-native "docol", docol
-    rpush pc
-    add w, 8
-    mov pc, w
-    jmp next
-
-_trap:
-    push qword [stack_base]
-    push rdx
-    mov rax, xt_trap_dispatch
-    mov w, rax
-    jmp [rax]
-
-colon "trap_dispatch", trap_dispatch
-    dq xt_lit, trapword
-    dq xt_find, xt_cfa, xt_execute
-    dq xt_bye 
-   
-colon "trap", trap
-    dq xt_lit, trapword
-    dq xt_prints, xt_lit, 10, xt_emit
-    dq xt_exit
 
 native "exit", exit
     rpop pc
@@ -307,6 +293,7 @@ native "number", number
     push rdx
     jmp next   
 
+; null-terminated string length
 colon "count", count 
      dq xt_dup
  .loop:
@@ -318,8 +305,9 @@ colon "count", count
  .exit: 
      dq xt_swap, xt_minus, xt_exit
 
-; ( addr len -- ) 
-; Prints a null-terminated string
+
+; prints a certain amount of symbols from string 
+; ( str cnt -- )
 colon "printc", printc 
     dq xt_to_r
 .loop:
@@ -333,6 +321,9 @@ colon "printc", printc
     .exit: 
     dq xt_from_r, xt_drop, xt_drop, xt_exit
 
+    
+; ( addr len -- ) 
+; Prints a null-terminated string 
 colon "prints", prints
      dq xt_dup, xt_count, xt_printc, xt_exit
 
@@ -346,6 +337,33 @@ colon "bye", bye
    dq xt_lit, 0
    dq xt_lit, 0
    dq xt_syscall
+
+
+; Only used to construct words. Implements colon-words
+native "docol", docol
+    rpush pc
+    add w, 8
+    mov pc, w
+    jmp next
+
+; It is being called when SIGSEGV occurs
+_trap:
+    push qword [stack_base]
+    push rdx
+    mov rax, xt_trap_dispatch
+    mov w, rax
+    jmp [rax]
+
+colon "trap_dispatch", trap_dispatch
+    dq xt_lit, trapword
+    dq xt_find, xt_cfa, xt_execute
+    dq xt_bye 
+   
+colon "trap", trap
+    dq xt_lit, trapword
+    dq xt_prints, xt_lit, 10, xt_emit
+    dq xt_exit
+
 
 ; ( call_num a1 a2 a3 a4 a5 a6 -- new_rax new_rdx )
 ; Executes syscall
@@ -461,9 +479,10 @@ native "c,", char_comma
     add qword[here], 1
     jmp next
 
+
 ; ( flags name --  )
 ; Create an entry in the dictionary
-; name is the new name 
+; name is the new name as a null-terminated string
 ; only immediate flag is implemented ATM 
 native "create", create
     ; link

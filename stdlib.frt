@@ -1,4 +1,7 @@
+: > < not ;
+
 : IMMEDIATE  last_word @ cfa 1 - dup @ 1 or swap c! ;
+
 
 : cell% 8 ;
 : cells cell% * ;
@@ -40,13 +43,14 @@
 
 ( Now we can define comments :)
 
+; ( a b c -- b c a )
+: rot >r swap r> swap ;
 : -rot swap >r swap  r> ;
 
 : over >r dup r> swap ;
 : 2dup over over ;
 : 2drop drop drop ;
 : 2over >r >r dup r> swap r> swap ;
-( FIXME case is bugged )
 : case 0 ; IMMEDIATE
 : of ' over , ' = , ' if execute ' drop , ; IMMEDIATE
 : endof ' else execute ; IMMEDIATE
@@ -237,5 +241,6 @@ include managed-string.frt
 
 ." Forthress -- a tiny Forth from scratch > (c) Igor Zhirkov 2017-2018 " cr
 
+include fib.frt
 
 : fact rec dup 1 = if  else dup 1 - recurse * then ; 
