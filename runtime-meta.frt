@@ -63,6 +63,7 @@ end-struct meta-entry%
   dup ."   printer: "   >meta-printer  @ ? cr
   ( dup ."   is value? "  >meta-is-value @ .         cr )
   dup ."   size: "      >meta-size     @ dup if . ."  bytes" else ." UNK" drop then  cr
+  dup >meta-is-value @ not if 
   ."   fields:" cr
   dup >meta-size @ cell% / 
   swap meta-entry% + swap dup if 0
@@ -70,6 +71,7 @@ end-struct meta-entry%
       do  
      dup @ >meta-name @ prints cr cell% + 
       loop
+    then 
 then 
 drop 
   ."  --- " cr
@@ -85,27 +87,39 @@ drop
 ( metainf - addr )
 : meta-alloc dup >meta-size @ heap-alloc  ( metainf addr  ) >r r@ swap manage r> ;
 
+: type-of
+  dup addr-is-chunk-start if
+    chunk-header% - >chunk-meta @ 
+  else drop 0 then
+  ;
 
 ( addr metainf - 0/1 )
-: of-type 
+: is-of-type 
     over addr-is-chunk-start if 
         swap chunk-header% - >chunk-meta @ =  
     else 2drop 0 
 then ; 
- 
+
+
+: show
+  dup type-of dup if
+    meta-execute-printer 
+  else drop . then ;
+
 
 
 mtype raw-cell mend 
 cell% raw-cell >meta-size ! 
-
+1 raw-cell >meta-is-value ! 
 
 mtype int 
     raw-cell :: >value
 mend 
 1 int >meta-is-value !
 
-: int-show ." int " >value @ . ; 
+: int-show >value @ . ; 
 ' int-show int >meta-printer ! 
+
 
 ( value )
 ( : new-int int _new >r r@ ! r> ; )
@@ -133,26 +147,62 @@ mend
 : addr-get-meta dup addr-is-managed if chunk-header% - >chunk-meta @ else drop 0 then ;
 
 
-: delete rec 
+: delete rec
     dup addr-get-meta dup if ( addr meta )
         dup >meta-is-value @ not if
-             >meta-size @  over + over ( addr limit curaddr ) 
-             repeat 
-                2dup = if 2drop 1 else 
-                    dup @ recurse    
+             >meta-size @  over + over ( addr limit curaddr )
+             repeat
+                2dup = if 2drop 1 else
+                    dup @ recurse
                     cell% + 0
-               then 
-             until  
+               then
+             until
              heap-free
-    else  drop
-    heap-free then 
-    else drop heap-free then ;
+        else  drop heap-free then
+    else drop drop then ;
 
 ( addr -- )
-: .  
-    dup addr-get-meta dup if ( addr meta )
+( : .
+    dup addr-get-meta dup if 
          over . ."    " >meta-printer @  ."   [" execute    ." ]" 
     else drop . then 
+;) 
+
+
+( ADTs
+ADT should be implemented like this:
+
+First possibility.
+
+1. 'Abstract type' - stores number of ctors
+2. 'Realization of abstract type' - is linked to the type meta; stores ctor idx 
+
+)
+( 
+struct
+  meta-entry% field >meta-entry
+  cell%       field >ctors-count
+end-struct ameta-entry%
+
+: atype inbuf word drop
+        inbuf string-allot
+        ameta-entry% allot >r
+        r@ >meta-entry >meta-name !
+        0 r@ >meta-entry >meta-collected !
+        0 r@ >meta-entry >meta-is-value !
+        0 r@ >ctors-count !
+        0 inbuf create ' docol @ , ' lit , r@ , ' exit ,
+        ' meta-default-print  r@ >meta-printer !
+        r> drop 
 ;
+
+atype tree
+
+tree ctor nil endctor
+
+tree ctor node
+   
+endctor )
+
 
 

@@ -43,7 +43,7 @@
 ;
 
 : estring-char-length ( string - length )
-    _" \n" string-prefix if 2 else 1 then ;
+    dup _" \n" string-prefix if drop 2 else c@ 0 <> then ;
 
 : string-allot ( ptr - allotptr)
     dup count 1 + allot dup >r swap string-copy r> ;
