@@ -140,19 +140,20 @@ global heap-meta-printer
     ." at " dup . ."  "
     ." | next: "
     dup >chunk-next @ .
+    ."  | size: " 
+    dup chunk-size .
     ."  | "
     dup >chunk-is-free @ if ." FREE " else ." ALLOC" 
             ."  | "
             dup >chunk-meta @ dup if
             ( *chunk-start *metainf )
-            over chunk-header% + swap  
+            over chunk-header% + swap
             ( *chunk-start *chunk-contents  *metainf )
-            
+            dup @ prints TAB TAB ."   | "
             heap-meta-printer @ execute
-            else ." <no meta> " drop then 
+            else ." <no meta> " drop then
         then
-    ."  | size: " 
-    chunk-size . cr
+    drop cr
 ;
 
 : heap-show

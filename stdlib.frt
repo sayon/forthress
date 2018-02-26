@@ -46,7 +46,7 @@
 : 2dup over over ;
 : 2drop drop drop ;
 : 2over >r >r dup r> swap r> swap ;
-( FIXME case is bugged )
+
 : case 0 ; IMMEDIATE
 : of ' over , ' = , ' if execute ' drop , ; IMMEDIATE
 : endof ' else execute ; IMMEDIATE
@@ -79,6 +79,7 @@ then
 
 : cr 10 emit ;
 : QUOTE 34 emit ;
+: TAB 9 emit ;
 
 : _"
   compiling if
@@ -228,28 +229,14 @@ include string.frt
     inbuf string-eq until drop ;
 
 
-include file.frt 
+include file.frt
 include recursion.frt
 
 include runtime-meta.frt
 include managed-string.frt
 
-( include lisp.frt )
 
+include flisp.frt
+( include flisp-parser.frt )
 
-( test zone below )
-mtype spair 
-    string :: >fst
-    string :: >snd
-mend 
-
-: spair-show 
-    ." (" QUOTE dup >fst @ prints QUOTE ." ," QUOTE >snd @ prints QUOTE ." )" 
-;
-
-' spair-show spair >meta-printer ! 
-
-
-
-m" world" m" hello" spair new 
 

@@ -38,12 +38,12 @@ include lisp-show.frt
     ;
 
 : symtab-dump symtab-first 
-    repeat 
-    symtab-next @ 
-    dup if 
-        dup symtab-show cr 0 
-        else drop 1 
-    then 
+    repeat
+    symtab-next @
+    dup if
+        dup symtab-show cr 0
+        else drop 1
+    then
     until
 ;
 

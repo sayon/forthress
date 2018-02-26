@@ -149,13 +149,13 @@ struct
     cell% field lisp-compound-body
 end-struct lisp-compound% 
 
-: lisp-compound ( args body - a ) 
-    lisp-compound% heap-alloc dup >r if 
+: lisp-compound ( args body - a )
+    lisp-compound% heap-alloc dup >r if
         lisp-compound-tag-value
         r@ lisp-compound-tag !
         r@ lisp-compound-body !
         r@ lisp-compound-args !
-    then r> ; 
+    then r> ;
 
 struct
     cell% field lisp-error-tag
