@@ -95,6 +95,10 @@ here    0 ,
 
 : 2drop drop drop ;
 : 2over >r >r dup r> swap r> swap ;
+<<<<<<< f768db8f03e80496f1349e162c1d6bfd86103be2
+=======
+
+>>>>>>> creating development branch
 : case 0 ; IMMEDIATE
 : of ' over , ' = , ' if execute ' drop , ; IMMEDIATE
 : endof ' else execute ; IMMEDIATE
@@ -123,6 +127,7 @@ then
 
 : cr 10 emit ;
 : QUOTE 34 emit ;
+: TAB 9 emit ;
 
 : _"
   compiling if
@@ -289,6 +294,7 @@ include hash.frt
     inbuf string-eq until drop ;
 
 
+include file.frt
 include recursion.frt
 
 include runtime-meta.frt
@@ -297,4 +303,6 @@ include managed-string.frt
 ." Forthress -- a tiny Forth from scratch > (c) Igor Zhirkov 2017-2018 " cr
 
 include fib.frt
+include flisp.frt
+
 
