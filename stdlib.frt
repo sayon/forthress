@@ -198,6 +198,7 @@ compnumber
 : include
     inbuf word drop
     inbuf file-open-append >r
+    ( place descriptor on top of data stack and interpret it )
     r@ interpret-fd
     r@ file-close
     r> drop ;
@@ -208,13 +209,14 @@ compnumber
 : global inbuf word drop 0  inbuf create ' docol @ , ' lit , cell% allot , ' exit ,  ;
 : constant inbuf word drop 0 inbuf create ' docol @ , ' lit , , ' exit , ;
 
-( a rather low-level primitive )
+( structures )
 : struct 0 ;
 : field over inbuf word drop 0 inbuf create ' docol @ , ' lit , , ' + ,  ' exit , + ;
 : end-struct constant  ;
 
-16 MB ( heap size )
 include diagnostics.frt
+
+16 MB ( heap size )
 include heap.frt
 drop
 
@@ -228,28 +230,12 @@ include string.frt
     inbuf string-eq until drop ;
 
 
-include file.frt 
 include recursion.frt
 
 include runtime-meta.frt
 include managed-string.frt
 
-( include lisp.frt )
+." Forthress -- a tiny Forth from scratch > (c) Igor Zhirkov 2017-2018 " cr
 
 
-( test zone below )
-mtype spair 
-    string :: >fst
-    string :: >snd
-mend 
-
-: spair-show 
-    ." (" QUOTE dup >fst @ prints QUOTE ." ," QUOTE >snd @ prints QUOTE ." )" 
-;
-
-' spair-show spair >meta-printer ! 
-
-
-
-m" world" m" hello" spair new 
-
+: fact rec dup 1 = if  else dup 1 - recurse * then ; 
