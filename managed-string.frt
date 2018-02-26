@@ -2,7 +2,7 @@ mtype string  mend
 
 1 string >meta-is-value !
 
-: string-show ." Str: " QUOTE prints QUOTE ." \"" ;
+: string-show QUOTE prints QUOTE ;
 ' string-show string >meta-printer ! 
 
 
