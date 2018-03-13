@@ -19,7 +19,7 @@ else @ dup not
 then
 until r> drop ;
 
-: is_word >r last_word @
+: is-word >r last_word @
 repeat 
 dup cfa r@  = 
 if dup 

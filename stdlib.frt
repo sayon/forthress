@@ -43,7 +43,7 @@
 
 ( Now we can define comments :)
 
-; ( a b c -- b c a )
+( a b c -- b c a )
 : rot >r swap r> swap ;
 : -rot swap >r swap  r> ;
 
@@ -225,6 +225,7 @@ include heap.frt
 drop
 
 include string.frt
+include hash.frt 
 
 : enum 0 repeat
     inbuf word drop dup
@@ -241,6 +242,3 @@ include managed-string.frt
 
 ." Forthress -- a tiny Forth from scratch > (c) Igor Zhirkov 2017-2018 " cr
 
-include fib.frt
-
-: fact rec dup 1 = if  else dup 1 - recurse * then ; 
