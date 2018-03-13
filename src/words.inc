@@ -547,6 +547,8 @@ interpreter_stub:
     dq xt_interpret_fd 
     dq xt_bye
 
+; reads words from an open fd and interprets them
+; (  fd -- )
 colon "interpret-fd", interpret_fd
     dq xt_lit, in_fd, xt_fetch, xt_to_r
     dq xt_lit, in_fd
