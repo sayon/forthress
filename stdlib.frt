@@ -1,12 +1,22 @@
-: > < not ;
+: IMMEDIATE  last_word @ cfa 1 - dup c@ 1 or swap c! ;
 
-: IMMEDIATE  last_word @ cfa 1 - dup @ 1 or swap c! ;
+: rot >r swap r> swap ;
+: -rot swap >r swap  r> ;
+
+: over >r dup r> swap ;
+: 2dup over over ;
+
+: <> = not ;
+: <= 2dup < -rot =  lor ;
+: > <= not ;
+: >= < not ; 
 
 
 : cell% 8 ;
 : cells cell% * ;
 : KB 1024 * ;
 : MB KB KB  ;
+
 
 : begin here ; IMMEDIATE
 : again ' branch , , ; IMMEDIATE
@@ -19,8 +29,33 @@
 : repeat here ; IMMEDIATE
 : until  ' 0branch , , ; IMMEDIATE
 
-: for ' >r , here ' dup , ' r@ , ' > , ' 0branch ,  here 0 , swap ; IMMEDIATE
-: endfor ' r> , ' lit , 1 , ' + , ' >r , ' branch , , here swap ! ' r> , ;  IMMEDIATE
+: for 
+      ' swap ,
+      ' >r , 
+      ' >r , 
+here  ' r> , 
+      ' r> , 
+      ' 2dup , 
+      ' >r , 
+      ' >r , 
+      ' > ,  
+      ' 0branch ,  
+here    0 , 
+       swap ; IMMEDIATE
+
+: endfor 
+      ' r> , 
+      ' lit , 
+          1 ,   
+        ' + , 
+       ' >r , 
+   ' branch , 
+            ,  here swap ! 
+       ' r> , 
+     ' drop , 
+     ' drop ,  
+
+;  IMMEDIATE
 
 : do  ' swap , ' >r , ' >r ,  here ; IMMEDIATE
 
@@ -43,22 +78,13 @@
 
 ( Now we can define comments :)
 
-( a b c -- b c a )
-: rot >r swap r> swap ;
-: -rot swap >r swap  r> ;
 
-: over >r dup r> swap ;
-: 2dup over over ;
 : 2drop drop drop ;
 : 2over >r >r dup r> swap r> swap ;
 : case 0 ; IMMEDIATE
 : of ' over , ' = , ' if execute ' drop , ; IMMEDIATE
 : endof ' else execute ; IMMEDIATE
 : endcase ' drop , dup if repeat ' then execute dup not until drop then  ; IMMEDIATE
-
-: <> = not ;
-: <= 2dup < -rot =  lor ;
-: >= 2dup > -rot = lor ;
 
 
 ( num from to -- 1/0)
@@ -242,3 +268,8 @@ include managed-string.frt
 
 ." Forthress -- a tiny Forth from scratch > (c) Igor Zhirkov 2017-2018 " cr
 
+include fib.frt
+
+: fact rec dup 1 = if  else dup 1 - recurse * then ; 
+
+include test.frt
