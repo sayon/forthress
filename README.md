@@ -144,10 +144,10 @@ Prints a certain amount of characters from string.
 * `!`
   ( addr val -- ) 
   Store value by address.
-* `!c`
+* `c!`
   ( addr char -- ) 
   Store one byte by address.
-* `@c`
+* `c@`
   ( addr -- char )
   Read one byte starting at addr.
 * `,`
