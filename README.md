@@ -142,10 +142,10 @@ Prints a certain amount of characters from string.
   ( addr -- value )
   Fetch value from memory.
 * `!`
-  ( addr val -- ) 
+  ( val addr -- ) 
   Store value by address.
 * `c!`
-  ( addr char -- ) 
+  ( char addr -- ) 
   Store one byte by address.
 * `c@`
   ( addr -- char )
