@@ -32,11 +32,12 @@ which will be out in 2017 thanks to [APress](http://apress.com).
 * `dup` ( a -- a a )
 * `rot` ( a b c -- b c a )
 * Arithmetic:
-  * `+` ( y x -- [ x + y ] )
-  * `*` ( y x -- [ x * y ] )
-  * `/` ( y x -- [ x / y ] )
-  * `%` ( y x -- [ x mod y ] )
-  * `-` ( y x -- [x - y] )
+  * `+` ( x y-- [ x + y ] )
+  * `*` ( x y-- [ x * y ] )
+  * `/` ( x y-- [ x / y ] )
+  * `%` ( x y-- [ x mod y ] )
+  * `-` ( x y-- [x - y] )
+  * `<` ( x y-- [x < y] )
 * Logic:
   * `not` ( a -- a' )
     a' = 0 if a != 0
