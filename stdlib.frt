@@ -17,6 +17,7 @@
 : KB 1024 * ;
 : MB KB KB  ;
 
+: allot dp @ swap over + dp ! ;
 
 : begin here ; IMMEDIATE
 : again ' branch , , ; IMMEDIATE
@@ -28,6 +29,7 @@
 
 : repeat here ; IMMEDIATE
 : until  ' 0branch , , ; IMMEDIATE
+
 
 : for 
       ' swap ,
@@ -167,6 +169,20 @@ readce dup 34 = if drop 1 else emit 0 then
       until 
     then ; IMMEDIATE
 
+: g" 
+    dp @ 
+
+    repeat
+        readce dup 34 = if 
+            drop 0 1 allot c! 1 
+        else 1 allot c! 0 then
+    until 
+  
+    compiling if 
+    ' lit , , 
+    then ; IMMEDIATE
+
+
 : ." ' " execute compiling if ' prints , then ; IMMEDIATE
 
 : read-digit readc dup .' 0 .' 9 in-range if .' 0 - else drop -1 then ;
@@ -245,8 +261,6 @@ compnumber
     r@ file-close
     r> drop ;
 
-( cells - addr )
-: allot dp @ swap over + dp ! ;
 
 : global inbuf word drop 0  inbuf create ' docol @ , ' lit , cell% allot , ' exit ,  ;
 : constant inbuf word drop 0 inbuf create ' docol @ , ' lit , , ' exit , ;
@@ -257,6 +271,8 @@ compnumber
 : end-struct constant  ;
 
 include diagnostics.frt
+include doc-engine.frt
+include documentation.frt
 
 16 MB ( heap size )
 include heap.frt
@@ -281,6 +297,4 @@ include managed-string.frt
 ." Forthress -- a tiny Forth from scratch > (c) Igor Zhirkov 2017-2018 " cr
 
 include fib.frt
-
-: fact rec dup 1 = if  else dup 1 - recurse * then ; 
 
