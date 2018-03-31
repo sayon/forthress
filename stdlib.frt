@@ -38,30 +38,42 @@ here  ' r> ,
       ' 2dup , 
       ' >r , 
       ' >r , 
-      ' > ,  
+      ' < ,  
       ' 0branch ,  
 here    0 , 
        swap ; IMMEDIATE
 
 : endfor 
       ' r> , 
-      ' lit , 
-          1 ,   
+      ' lit , 1 ,   
         ' + , 
        ' >r , 
    ' branch , 
             ,  here swap ! 
        ' r> , 
      ' drop , 
+       ' r> , 
      ' drop ,  
 
 ;  IMMEDIATE
 
 : do  ' swap , ' >r , ' >r ,  here ; IMMEDIATE
 
-: loop ' r> , ' lit , 1 , ' + , ' dup , ' r@ , ' < , ' not , '  swap , ' >r , ' 0branch , ,
-' r> , ' drop ,
-' r> , ' drop ,
+: loop 
+        ' r> , 
+        ' lit , 1 , 
+        ' + , 
+        ' dup ,     
+        ' r@ , 
+        ' < , 
+        ' not , 
+        '  swap , 
+        ' >r , 
+        ' 0branch , ,
+        ' r> , 
+        ' drop ,
+        ' r> , 
+        ' drop ,
  ;  IMMEDIATE
 
 
@@ -272,4 +284,3 @@ include fib.frt
 
 : fact rec dup 1 = if  else dup 1 - recurse * then ; 
 
-include test.frt
