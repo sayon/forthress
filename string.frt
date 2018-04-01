@@ -72,3 +72,14 @@ then
 : string-empty? ( str - 0 1 ) 
     c@ 0 = ; 
 
+g" 
+( a b -- a++b ) 
+Concatenates two strings. The result is allocated on heap.
+"
+: string-concat
+2dup count swap count 1 + + heap-alloc >r  
+swap r@ swap string-copy
+r@ count r@ + 
+swap string-copy
+r>
+; with-doc 
