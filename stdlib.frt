@@ -95,10 +95,7 @@ here    0 ,
 
 : 2drop drop drop ;
 : 2over >r >r dup r> swap r> swap ;
-<<<<<<< f768db8f03e80496f1349e162c1d6bfd86103be2
-=======
 
->>>>>>> creating development branch
 : case 0 ; IMMEDIATE
 : of ' over , ' = , ' if execute ' drop , ; IMMEDIATE
 : endof ' else execute ; IMMEDIATE
