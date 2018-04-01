@@ -290,6 +290,7 @@ include hash.frt
     inbuf string-eq until drop ;
 
 
+include file.frt
 include recursion.frt
 
 include runtime-meta.frt
@@ -298,4 +299,3 @@ include managed-string.frt
 ." Forthress -- a tiny Forth from scratch > (c) Igor Zhirkov 2017-2018 " cr
 
 include fib.frt
-
