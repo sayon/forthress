@@ -123,6 +123,7 @@ then
 
 : cr 10 emit ;
 : QUOTE 34 emit ;
+: TAB 9 emit ;
 
 : _"
   compiling if
