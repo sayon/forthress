@@ -149,7 +149,7 @@ global heap-meta-printer
             ( *chunk-start *metainf )
             over chunk-header% + swap
             ( *chunk-start *chunk-contents  *metainf )
-            dup @ prints TAB TAB ."   | "
+            dup @ prints TAB emit TAB emit ."   | "
             heap-meta-printer @ execute
             else ." <no meta> " drop then
         then
