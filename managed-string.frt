@@ -8,4 +8,4 @@ mtype string  mend
 
 : m" ' h" execute compiling if
     ' dup , ' string , ' manage , 
-    else dup string  manage then ;
+    else dup string  manage then ; IMMEDIATE
