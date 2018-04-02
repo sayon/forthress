@@ -122,7 +122,7 @@ then
 ;
 
 : cr 10 emit ;
-: QUOTE 34 emit ;
+: QUOTE 34 ;
 
 : _"
   compiling if
