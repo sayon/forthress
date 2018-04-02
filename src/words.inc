@@ -382,6 +382,58 @@ native "syscall", syscall
     push rdx
     jmp next
 
+%ifdef NATIVE_CALLS
+
+extern dlsym
+native "p_dlsym", p_dlsym
+    push dlsym
+    jmp next
+
+
+; Experimental feature: native call
+; The stack should hold these values, in this order
+; ( function* rdi rsi rdx rcx r8 r9 rax xmm0 xmm1 xmm2 xmm3 xmm4 xmm5 xmm6 xmm7 )
+; After that, the stack will hold these values:
+; ( rax rdx xmm0 xmm1 )
+; This way you can call everything even functions with variable arguments count.
+; Notice, that you can pass additional integer/pointer arguments on stack, as
+; Forthress data stack corresponds to the hardware stack!
+native "ncall", ncall
+    pop rax, 
+    movq xmm7, rax
+    pop rax 
+    movq xmm6, rax
+    pop rax 
+    movq xmm5, rax
+    pop rax 
+    movq xmm4, rax
+    pop rax 
+    movq xmm3, rax
+    pop rax 
+    movq xmm2, rax
+    pop rax
+    movq xmm1, rax
+    pop rax
+    movq xmm0, rax
+    pop rax
+    pop r9
+    pop r8
+    pop rcx
+    pop rdx
+    pop rsi
+    pop rdi
+    add rsp, 8
+    call [rsp-8]
+    push rax
+    push rdx
+    movq rcx, xmm0
+    push rcx 
+    movq rcx, xmm1 
+    push rcx 
+    jmp next
+
+%endif
+
 ; Jump to a location. Location is an absolute address
 ; Branch is a compile-only word.
 native "branch", branch
