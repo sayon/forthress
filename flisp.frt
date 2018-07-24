@@ -85,15 +85,42 @@ mend
         ." (λ " dup >lisp-compound-args @ recurse ." . " >lisp-compound-body @ recurse ." )"
       endof
 
-
-
       cr ." lisp-show: can not show a value of type " dup
       if dup >meta-name @ prints cr else ." <no type available>" then
     endcase
   then
   ;
 
-' lisp-show lisp             >meta-printer !
+: show-lisp-pair
+  dup
+  ." ("   >lisp-pair-car @ show
+  ."  . " >lisp-pair-cdr @ show ." )" ;
+' show-lisp-pair lisp-pair >meta-printer !
+
+: show-lisp-number @ show ;
+' show-lisp-number lisp-number >meta-printer !
+
+: show-lisp-compound dup
+  ." (λ " >lisp-compound-args @ show ." . " >lisp-compound-body @ show ." )" ;
+' show-lisp-compound lisp-compound >meta-printer !
+
+: show-lisp-symbol @ show ;
+' show-lisp-symbol lisp-symbol >meta-printer !
+
+: show-lisp-bool
+  >lisp-bool-value @  if ." t" else ." f" then ;
+' show-lisp-bool lisp-bool >meta-printer !
+
+: li int new lisp-number new ;
+: cons swap lisp-pair new ;
+: lambda lisp-compound new ;
+: s lisp-symbol new ;
+
+3 li 2 li 1 li m" x" 0 cons cons cons cons show
+( 1 li 2 li cons show )
+
+
+( ' lisp-show lisp             >meta-printer !
 ' lisp-show lisp-pair        >meta-printer !
 ' lisp-show lisp-number      >meta-printer !
 ' lisp-show lisp-bool        >meta-printer !
@@ -103,7 +130,8 @@ mend
 ' lisp-show lisp-special     >meta-printer !
 ' lisp-show lisp-unspecific  >meta-printer !
 ' lisp-show lisp-compound    >meta-printer !
-' lisp-show lisp-error       >meta-printer !
+' lisp-show lisp-error       >meta-printer ! )
+
 
 
 
@@ -134,8 +162,8 @@ global symtab-first
 : symtab-save symtab-first @ ;
 : symtab-restore symtab-first ! ;
 
-include lisp-expr.frt
-include lisp-show.frt
+( include lisp-expr.frt
+include lisp-show.frt )
 
 : symtab-show ( a  - )
 	dup . ." : " dup >symtab-name @ ?prints

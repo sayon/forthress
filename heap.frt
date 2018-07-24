@@ -8,6 +8,7 @@ struct
     cell% field >chunk-next
     cell% field >chunk-sig
     cell% field >chunk-is-free
+    cell% field >chunk-mark
     cell% field >chunk-meta
 end-struct chunk-header%
 
@@ -149,7 +150,7 @@ global heap-meta-printer
             ( *chunk-start *metainf )
             over chunk-header% + swap
             ( *chunk-start *chunk-contents  *metainf )
-            dup @ prints TAB emit TAB emit ."   | "
+            dup @ prints TAB emit ."   | "
             heap-meta-printer @ execute
             else ." <no meta> " drop then
         then
@@ -162,7 +163,7 @@ global heap-meta-printer
     repeat
        @ dup chunk-show
        >chunk-next dup @ not 
-    until 
+    until
    drop
 ; 
 
@@ -172,22 +173,22 @@ global heap-meta-printer
 
 : addr-is-chunk-start
   dup addr-in-heap over addr-not-in-first-chunk land if
-        chunk-header% - >chunk-sig @ CHUNK_SIG =  
+        chunk-header% - >chunk-sig @ CHUNK_SIG =
   else drop 0 then
 ;
 
 : chunk-show-meta
-    dup chunk-header% - >chunk-meta @ dup if 
-    ( chunk meta - ) 
-    ." <" heap-meta-printer @ execute ." >"  
-    else drop drop 
-    then  
+    dup chunk-header% - >chunk-meta @ dup if
+    ( chunk meta - )
+    ." <" heap-meta-printer @ execute ." >"
+    else drop drop
+    then
 ;
 
-: decompile 
-   dup addr-is-chunk-start if 
-   dup . ."  " chunk-show-meta  
-  else  decompile then 
+: decompile
+   dup addr-is-chunk-start if
+   dup . ."  " chunk-show-meta
+  else decompile then
 ;
 
-heap-init 
+heap-init

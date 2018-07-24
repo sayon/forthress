@@ -6,8 +6,8 @@
 #
 # ------------------------------------------------
 
-ASM			= nasm
-ASMFLAGS	= -felf64 -g -Isrc/ 
+ASM         = nasm
+ASMFLAGS    = -felf64 -g -Isrc/ 
 
 
 NATIVE_CALLS_SUPPORT=1
@@ -17,10 +17,10 @@ NATIVE_CALLS_SUPPORT=1
 ifdef NATIVE_CALLS_SUPPORT
 LINKERFLAGS = -nostdlib 
 LIBS        = -ldl 
-LINKER 		= gcc 
-ASMFLAGS	+= -DNATIVE_CALLS
+LINKER      = gcc 
+ASMFLAGS   += -DNATIVE_CALLS
 else
-LINKER 		= ld
+LINKER      = ld
 LINKERFLAGS = 
 LIBS        = 
 endif

@@ -1,208 +1,200 @@
-( What we want to do here is to create a system that allows us writing
-  structures on steroids. They should have the following functionality:
-
-- declaring fields
-- implicitly creating a meta-information common chunk using ALLOT
-- creating a 'tostring'-kind of method
-- creating a word that accepts a word and applies it to each field address /used by GC /
-
-' word set-printer typename
-
-typename is an alias for its metainformation
-
-adt lisp-expr 
-   mconstructor lisp-number 
-    int ::      
-   mend 
-   mconstructor  
-endadt 
-)
-
-
 struct
-  cell% field >meta-name
-  cell% field >meta-printer
-  cell% field >meta-collected
-  cell% field >meta-is-value
-  cell% field >meta-size
-end-struct meta-entry%
+  cell% field >class-name
 
-: meta-default-print  chunk-header% - >chunk-meta @ >meta-name @ ." obj:"  prints ;
-    
-( : constant inbuf word drop 0 inbuf create ' docol @ , ' lit , , ' exit , ; )
-: mtype inbuf word drop
-        inbuf string-allot
-        meta-entry% allot >r
-          r@ >meta-name !
-        0 r@ >meta-collected !
-        0 r@ >meta-is-value !
-        ( creating 'typename' word to return its metainformation address )
-        0 inbuf create ' docol @ , ' lit , r@ , ' exit ,
+  ( -- Virtual methods -- )
+  cell% field >class-ctor
+  cell% field >class-size ( has 0 arguments; returns 0 for string )
+  cell% field >class-copy
+  cell% field >class-show
+  cell% field >class-dtor
+
+  ( -- Field count -- )
+  cell% field >class-fields
+
+  ( -- Fields come here --)
+end-struct class-entry%
+
+global default-show
+global default-copy
+global default-ctor
+global default-dtor
+global default-size
 
 
-        ' meta-default-print  r@ >meta-printer ! 
-        r> 0
+g"
+class <newtype>
+
+Creates a new managed type.
+
+Example:
+
+```
+class pair
+int :: >fst
+int :: >snd
+class-end
+```
+"
+: class
+  word-allot
+  class-entry% allot >r
+  r@ >class-name !
+
+  default-show @  r@ >class-show !
+  default-copy @  r@ >class-copy !
+  default-ctor @  r@ >class-ctor !
+  default-dtor @  r@ >class-dtor !
+  default-size @  r@ >class-size !
+
+  ( creating 'typename' word to return its class information address )
+  0 r@ >class-name @ create
+  ' docol @ , ' lit , r@ , ' exit ,
+  r> 0
+; with-doc
+
+
+( parent-classinf offset field-classinf -- parent-classinf newoffset )
+: ::
+  cell% allot ! ( parent-classinf offset -- )
+  dup add-constant
+  cell% +
 ;
 
-( parent-metainf offset field-metainf -- parent-metainf newoffset )
-: :: 
-    cell% allot !
-( parent-metainf offset -- ) 
-    inbuf word drop 
-    dup 0 inbuf create ' docol @ , ' lit , , ' + ,  ' exit , 
-    cell% + 
-;
+( classinf size - )
+: class-end cell% / swap >class-fields ! ;
 
-( metainf size - )
-: mend swap >meta-size ! 0 cell% allot !  ; 
 
-( fixme: raw cell is not printing correctly )
-: meta-show
-  ."  --- " cr
-  dup ."   type name: " >meta-name     @ prints    cr
-  dup ."   printer: "   >meta-printer  @ ? cr
-  ( dup ."   is value? "  >meta-is-value @ .         cr )
-  dup ."   size: "      >meta-size     @ dup if . ."  bytes" else ." UNK" drop then  cr
-  dup >meta-is-value @ not if 
-  ."   fields:" cr
-  dup >meta-size @ cell% / 
-  swap meta-entry% + swap dup if 0
-    ( fields-count 0 -- )
-      do  
-     dup @ >meta-name @ prints cr cell% + 
-      loop
-    then 
-then 
-drop 
-  ."  --- " cr
-;
 
-( chunk-contents *metainf )
-: meta-execute-printer >meta-printer @ execute  ; 
-' meta-execute-printer heap-meta-printer ! 
+( chunk-contents *classinf )
+: class-show >class-show @ execute  ;
+' class-show heap-meta-printer !
 
-( addr meta - )
+( addr class - )
 : manage swap chunk-header% - >chunk-meta ! ;
 
-( metainf - addr )
-: meta-alloc dup >meta-size @ heap-alloc  ( metainf addr  ) >r r@ swap manage r> ;
 
-: type-of
-  dup addr-is-chunk-start if
-    chunk-header% - >chunk-meta @ 
-  else drop 0 then
-  ;
+( classinf sz - addr )
+: class-alloc heap-alloc dup >r swap manage r> ;
 
-( addr metainf - 0/1 )
-: is-of-type 
-    over addr-is-chunk-start if 
-        swap chunk-header% - >chunk-meta @ =  
-    else 2drop 0 
-then ; 
+( classinf - addr )
+: class-alloc-default dup >class-fields @ cells class-alloc ;
+
+: type-of dup addr-is-chunk-start if chunk-header% - >chunk-meta @ else drop 0 then ;
+
+( addr classinf - 0/1 )
+: is-of-type swap type-of dup if = else 2drop 0 then ;
+
+: [managed-only]
+  ' dup ,
+  ' type-of ,
+  ' not ,
+  ' if execute
+       ' lit , " In word '" , ' prints , 
+       ' this-word-name execute ' prints ,
+       ' lit , " ': '" , ' prints ,
+       ' ? ,
+       ' lit , " ' should be a managed type" , ' prints , ' cr ,
+       ' exit ,
+       ' then execute
+; IMMEDIATE
+
+: show   [managed-only] dup type-of >class-show @ execute ;
+: new                           dup >class-ctor @ execute ;
+: copy   [managed-only] dup type-of >class-copy @ execute ;
+: delete [managed-only] dup type-of >class-dtor @ execute ;
+: size   [managed-only] dup type-of >class-size @ execute ;
+
+: object-name type-of >class-name @ ;
+: object-fields type-of >class-fields @ ;
 
 
-: show
-  dup type-of dup if
-    meta-execute-printer 
-  else drop . then ;
-
-
-
-mtype raw-cell mend 
-cell% raw-cell >meta-size ! 
-1 raw-cell >meta-is-value ! 
-
-mtype int 
-    raw-cell :: >value
-mend 
-1 int >meta-is-value !
-
-: int-show >value @ . ; 
-' int-show int >meta-printer ! 
-
-
-( value )
-( : new-int int _new >r r@ ! r> ; )
-
-: meta-fields-count >meta-size @ cell% / ; 
-
-( fieldN ... field2 field1 meta -- addr )
-: new 
-    dup meta-alloc dup >r swap 
-    ( fieldN ... field2 field1 addr count )
-     meta-fields-count 0 do
-    2dup ! 
-    swap drop
-    cell% +  
-      loop 
-    drop r>  
+( addr fun - )
+: object-for-each-field
+  swap [managed-only]
+  dup object-fields 0
+  do
+    2dup >r >r ( fun addr , addr fun )
+    @ swap execute
+    r> r> cell% +
+  loop
+  2drop
 ;
 
-: addr-is-managed dup addr-is-chunk-start if
-        chunk-header% - >chunk-meta @ 0 <>  
-    else drop 0 then ;
-
-
-( addr -- meta )
-: addr-get-meta dup addr-is-managed if chunk-header% - >chunk-meta @ else drop 0 then ;
-
-
-: delete rec
-    dup addr-get-meta dup if ( addr meta )
-        dup >meta-is-value @ not if
-             >meta-size @  over + over ( addr limit curaddr )
-             repeat
-                2dup = if 2drop 1 else
-                    dup @ recurse
-                    cell% + 0
-               then
-             until
-             heap-free
-        else  drop heap-free then
-    else drop drop then ;
-
-( addr -- )
-( : .
-    dup addr-get-meta dup if 
-         over . ."    " >meta-printer @  ."   [" execute    ." ]" 
-    else drop . then 
-;) 
-
-
-( ADTs
-ADT should be implemented like this:
-
-First possibility.
-
-1. 'Abstract type' - stores number of ctors
-2. 'Realization of abstract type' - is linked to the type meta; stores ctor idx 
-
-)
-( 
-struct
-  meta-entry% field >meta-entry
-  cell%       field >ctors-count
-end-struct ameta-entry%
-
-: atype inbuf word drop
-        inbuf string-allot
-        ameta-entry% allot >r
-        r@ >meta-entry >meta-name !
-        0 r@ >meta-entry >meta-collected !
-        0 r@ >meta-entry >meta-is-value !
-        0 r@ >ctors-count !
-        0 inbuf create ' docol @ , ' lit , r@ , ' exit ,
-        ' meta-default-print  r@ >meta-printer !
-        r> drop 
+( addr fun - )
+: object-for-each-field-reverse
+  swap [managed-only]
+  dup object-fields >r
+  dup object-fields 1 - cells +
+  ( fun addr-last-field ,  fields )
+  r> 0
+    do
+      2dup >r >r ( fun addr , addr fun )
+      @ swap execute
+      r> r> cell% -
+    loop
+    2drop
 ;
 
-atype tree
+( --- size --- )
+: default-size-impl type-of >class-fields @ cells
+; ' default-size-impl default-size !
 
-tree ctor nil endctor
+( --- show --- )
+: --show-space show ."  " ;
 
-tree ctor node
-   
-endctor )
+: show-recursive
+  dup object-name ?prints ." "
+  dup object-fields if
+    ." [ "
+    ' --show-space object-for-each-field
+    ." ]"
+  else drop then
+; ' show-recursive default-show !
 
 
+( --- ctor --- )
 
+( fieldN ... field2 field1 class -- addr )
+: default-ctor-impl
+  dup >class-fields @ not if
+    ." Can not use default ctor for classes with 0 fields \n"
+    drop exit then
+
+  class-alloc-default dup >r
+  dup object-fields 0 do
+    dup -rot !
+    cell% +
+  loop
+  drop r>
+; ' default-ctor-impl default-ctor ! 
+
+
+( --- copy --- )
+( old - new )
+: default-copy-impl
+  [managed-only]
+  dup type-of >r
+  ( old , type )
+  dup object-fields 1 - cells over +
+
+  swap object-fields 0 do
+    ( cur-addr )
+    dup @ copy swap 
+    cell% -
+  loop
+  drop
+  r> new
+; ' default-copy-impl default-copy !
+
+( --- dtor --- )
+: default-dtor-impl
+  dup >class-fields @ if
+    dup ' delete object-for-each-field
+  then
+  heap-free
+; ' default-dtor-impl default-dtor ! 
+
+
+include runtime-meta-diagnostic.frt
+include runtime-meta-syntax.frt
+include stdclasses.frt

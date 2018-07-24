@@ -1,11 +1,10 @@
-mtype string  mend
+class string  class-end
+string :value-type
 
-1 string >meta-is-value !
-
-: string-show ." Str: " QUOTE emit prints QUOTE emit ." \"" ;
-' string-show string >meta-printer ! 
-
+: string-show QUOTE emit prints QUOTE emit ;
+' string-show string >class-printer ! 
 
 : m" ' h" execute compiling if
-    ' dup , ' string , ' manage , 
-    else dup string  manage then ; IMMEDIATE
+      ' dup , ' string , ' manage , 
+        else dup string  manage then ; IMMEDIATE
+        

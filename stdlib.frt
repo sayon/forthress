@@ -30,6 +30,10 @@
 : repeat here ; IMMEDIATE
 : until  ' 0branch , , ; IMMEDIATE
 
+: this-word-name
+  ' lit ,
+  last_word @ cell% + 1 + ,
+; IMMEDIATE
 
 : for 
       ' swap ,
@@ -88,7 +92,7 @@ here    0 ,
 : readc@ in_fd @ swap 1 sys-read ;
 : readc inbuf readc@ drop inbuf c@ ;
 
-: ( repeat readc 41 - not until ; IMMEDIATE
+: ( repeat readc 41 = until ; IMMEDIATE
 
 ( Now we can define comments :)
 
@@ -107,6 +111,8 @@ here    0 ,
 
 ( 1 if we are compiling )
 : compiling state @ ;
+
+: compilation-start 1 state ! ;
 
 : compnumber compiling if ' lit , , then ;
 
@@ -263,9 +269,11 @@ compnumber
     r@ file-close
     r> drop ;
 
+: word-create inbuf word drop 0 inbuf create ' docol @ , ;
 
 : global inbuf word drop 0  inbuf create ' docol @ , ' lit , cell% allot , ' exit ,  ;
 : constant inbuf word drop 0 inbuf create ' docol @ , ' lit , , ' exit , ;
+: add-constant inbuf word drop 0 inbuf create ' docol @ , ' lit , , ' + , ' exit , ;
 
 ( structures )
 : struct 0 ;
@@ -295,15 +303,10 @@ include file.frt
 include recursion.frt
 
 include runtime-meta.frt
-include managed-string.frt
+( include managed-string.frt )
 
 ." Forthress -- a tiny Forth from scratch > (c) Igor Zhirkov 2017-2018 " cr
 
-include fib.frt
+( include fib.frt
 include native.frt
-( include flisp.frt)
-
-
-include native.frt
-
-
+ include flisp.frt )
