@@ -42,6 +42,9 @@ global heap-size
 ( a - )
 : chunk-mark-alloc >chunk-is-free 0 swap ! ;
 
+: chunk-mark-non-collectable >chunk-collectable 0 swap ! ;
+: chunk-mark-collectable >chunk-collectable 1 swap ! ;
+
 ( a - )
 : chunk-init
     CHUNK_SIG over >chunk-sig  !
@@ -121,7 +124,7 @@ global dispatch-heap-alloc
 
 : heap-alloc dispatch-heap-alloc @ execute ;
 ( sz - addr )
-: heap-alloc-impl
+: impl-heap-alloc
 chunk-header% +  ( HERE )
 dup heap-first-free-of-size dup if
         ( sz a )
@@ -132,10 +135,12 @@ dup heap-first-free-of-size dup if
             drop
         then
         dup chunk-mark-alloc
+        dup chunk-mark-non-collectable
 		chunk-header% +
     else
         drop drop 0
-then ; ' heap-alloc-impl dispatch-heap-alloc !
+then
+; ' impl-heap-alloc dispatch-heap-alloc !
 
 
 ( a - )
