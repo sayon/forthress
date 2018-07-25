@@ -1,7 +1,7 @@
-include mmap.frt 
+include mmap.frt
 
 ( Each heap entry has a header:
-| next | is-free | ptrmeta | 
+| next | is-free | ptrmeta |
 )
 
 struct
@@ -9,6 +9,7 @@ struct
     cell% field >chunk-sig
     cell% field >chunk-is-free
     cell% field >chunk-mark
+    cell% field >chunk-collectable
     cell% field >chunk-meta
 end-struct chunk-header%
 
@@ -26,10 +27,10 @@ global heap-size
 : heap-last-address heap-size @ heap-start @ + ;
 
 ( a - sz )
-: chunk-size 
-    dup chunk-is-last if 
-        heap-last-address swap - 
-        else dup >chunk-next @ swap -  
+: chunk-size
+    dup chunk-is-last if
+        heap-last-address swap -
+        else dup >chunk-next @ swap - 
         then ;
 
 ( a - )
@@ -42,96 +43,103 @@ global heap-size
 : chunk-mark-alloc >chunk-is-free 0 swap ! ;
 
 ( a - )
-: chunk-init 
-    dup >chunk-sig  CHUNK_SIG swap !
-    dup >chunk-next 0 swap ! 
+: chunk-init
+    CHUNK_SIG over >chunk-sig  !
+    0 over >chunk-next !
+    1 over >chunk-collectable !
     dup chunk-mark-free
-    >chunk-meta 0 swap ! ;
+    0 over >chunk-meta !
+    drop
+    ;
 
 ( size - 1/0 )
-: heap-init 
+: heap-init
     dup chunk-min-size < if
         drop 0
     else
         dup
-        sys-mmap dup if 
+        sys-mmap dup if
             dup chunk-init
-            heap-start ! 
-            heap-size ! 
+            heap-start !
+            heap-size !
             1
-        else 
+        else
         drop drop 0
         then
     then ;
 
 ( a -- 1/0 )
 : chunk-try-merge >r
-    r@ chunk-is-last not if  
-        r@ >chunk-is-free @  r@ >chunk-next @ >chunk-is-free @ land if 
-            r@ >chunk-next @ >chunk-next @ 
-            r@ >chunk-next ! 1 
-        else 0 then  
+    r@ chunk-is-last not if 
+        r@ >chunk-is-free @  r@ >chunk-next @ >chunk-is-free @ land if
+            r@ >chunk-next @ >chunk-next @
+            r@ >chunk-next ! 1
+        else 0 then 
     else 0 then
     r> drop ;
 
 ( a --  )
-: chunk-iterate-try-merge 
+: chunk-iterate-try-merge
     dup chunk-try-merge if
         repeat
             dup chunk-try-merge
         not until
-        drop 
-    else drop then 
+        drop
+    else drop then
 ;
 
 ( sz - addr )
-: heap-first-free-of-size >r heap-start 
+: heap-first-free-of-size >r heap-start
     repeat
-    @ 
-    dup if 
+    @
+    dup if
         dup chunk-iterate-try-merge
-        dup >chunk-is-free @ over chunk-capacity r@ >= land 
+        dup >chunk-is-free @ over chunk-capacity r@ >= land
         else 1
         then
-    until 
+    until
     r> drop ;
 
 
 ( a query - 0/1 )
-: chunk-should-split swap 
-    chunk-size chunk-min-size -  1 swap 
-    ( q 1 [size - minsize]  ) 
+: chunk-should-split swap
+    chunk-size chunk-min-size -  1 swap
+    ( q 1 [size - minsize]  )
     in-range ;
 
 ( a query  - )
 : chunk-split
-    over + 
-    dup chunk-init 
+    over +
+    dup chunk-init
     >r ( a, a2 )
     dup >chunk-next @ ( a oldnext , a2 )
-    r@ >chunk-next ! 
-    r> swap >chunk-next ! 
+    r@ >chunk-next !
+    r> swap >chunk-next !
 ;
 
+global dispatch-heap-alloc
+
+: heap-alloc dispatch-heap-alloc @ execute ;
 ( sz - addr )
-: heap-alloc
-chunk-header% +  ( HERE ) 
-dup heap-first-free-of-size dup if 
+: heap-alloc-impl
+chunk-header% +  ( HERE )
+dup heap-first-free-of-size dup if
         ( sz a )
-        swap 2dup chunk-should-split  if 
+        swap 2dup chunk-should-split  if
             ( a sz )
-             over >r chunk-split r> 
+             over >r chunk-split r>
         else ( a sz )
             drop
         then
         dup chunk-mark-alloc
-		chunk-header% + 
+		chunk-header% +
     else
         drop drop 0
-    then ;
+then ; ' heap-alloc-impl dispatch-heap-alloc !
+
 
 ( a - )
-: heap-free chunk-header% - chunk-mark-free ; 
+: heap-free chunk-header% - chunk-mark-free ;
 
 ( should contain a printer of form: )
 ( chunk-contents-addr *metainf -- )
@@ -141,10 +149,12 @@ global heap-meta-printer
     ." at " dup . ."  "
     ." | next: "
     dup >chunk-next @ .
-    ."  | size: " 
+    ."  | size: "
     dup chunk-size .
     ."  | "
-    dup >chunk-is-free @ if ." FREE " else ." ALLOC" 
+    dup >chunk-mark @ .
+    ."  | "
+    dup >chunk-is-free @ if ." FREE  |" else ." ALLOC"
             ."  | "
             dup >chunk-meta @ dup if
             ( *chunk-start *metainf )
@@ -162,10 +172,10 @@ global heap-meta-printer
     heap-start
     repeat
        @ dup chunk-show
-       >chunk-next dup @ not 
+       >chunk-next dup @ not
     until
    drop
-; 
+;
 
 : addr-in-heap  heap-start @ heap-last-address 1 - in-range ;
 

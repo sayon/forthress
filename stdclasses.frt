@@ -11,6 +11,9 @@ int declare-ctor[ cell% class-alloc dup -rot  ! ]end-ctor;
 : int-copy @ int new ;
 ' int-copy int >class-copy !
 
+: i int new ;
+
+
 : ref raw-cell ;
 
 class pair
@@ -18,7 +21,6 @@ ref :: >fst
 ref :: >snd
 class-end
 
-: =>0 0 ;
 ( --- managed string --- )
 
 class string class-end
@@ -33,4 +35,9 @@ class string class-end
        dup string manage
      then ; IMMEDIATE
 
-: i int new ;
+( prefix str -- "prefix-str" )
+: ++
+  over count over count + 2 + heap-alloc dup string manage
+  string-prefix-with
+; 
+

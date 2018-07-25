@@ -104,6 +104,7 @@ class-end
 : delete [managed-only] dup type-of >class-dtor @ execute ;
 : size   [managed-only] dup type-of >class-size @ execute ;
 
+: object-chunk-start [managed-only] chunk-header% - ;
 : object-name type-of >class-name @ ;
 : object-fields type-of >class-fields @ ;
 
@@ -112,11 +113,11 @@ class-end
 : object-for-each-field
   swap [managed-only]
   dup object-fields 0
-  do
+  for 
     2dup >r >r ( fun addr , addr fun )
     @ swap execute
     r> r> cell% +
-  loop
+  endfor 
   2drop
 ;
 
@@ -127,11 +128,11 @@ class-end
   dup object-fields 1 - cells +
   ( fun addr-last-field ,  fields )
   r> 0
-    do
+   for 
       2dup >r >r ( fun addr , addr fun )
       @ swap execute
       r> r> cell% -
-    loop
+    endfor
     2drop
 ;
 
@@ -198,3 +199,4 @@ class-end
 include runtime-meta-diagnostic.frt
 include runtime-meta-syntax.frt
 include stdclasses.frt
+include runtime-gc.frt

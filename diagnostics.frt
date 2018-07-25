@@ -1,5 +1,7 @@
 ( diagnostics words: decompilation, exception handling )
 
+
+
 : info dup 9 + prints ." : " cfa . cr ; 
 : dump last_word @
 repeat 
@@ -47,6 +49,16 @@ until r> drop ;
     swap dup dup word-size + in-range ;
 
 : ? " decompile" find cfa execute ;
+
+( This can be defined as a pure forth word too :) 
+: .S
+  sp
+  stack_base over - cell% / 0 for
+  dup @ ? cr
+  cell% +
+  endfor
+  drop
+;
 
 : decompile >r last_word
     repeat 

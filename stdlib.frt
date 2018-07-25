@@ -9,7 +9,7 @@
 : <> = not ;
 : <= 2dup < -rot =  lor ;
 : > <= not ;
-: >= < not ; 
+: >= < not ;
 
 
 : cell% 8 ;
@@ -35,50 +35,50 @@
   last_word @ cell% + 1 + ,
 ; IMMEDIATE
 
-: for 
+: for
       ' swap ,
-      ' >r , 
-      ' >r , 
-here  ' r> , 
-      ' r> , 
-      ' 2dup , 
-      ' >r , 
-      ' >r , 
-      ' < ,  
-      ' 0branch ,  
-here    0 , 
+      ' >r ,
+      ' >r ,
+here  ' r> ,
+      ' r> ,
+      ' 2dup ,
+      ' >r ,
+      ' >r ,
+      ' < ,
+      ' 0branch ,
+here    0 ,
        swap ; IMMEDIATE
 
-: endfor 
-      ' r> , 
-      ' lit , 1 ,   
-        ' + , 
-       ' >r , 
-   ' branch , 
-            ,  here swap ! 
-       ' r> , 
-     ' drop , 
-       ' r> , 
-     ' drop ,  
+: endfor
+      ' r> ,
+      ' lit , 1 ,
+        ' + ,
+       ' >r ,
+   ' branch ,
+            ,  here swap !
+       ' r> ,
+     ' drop ,
+       ' r> ,
+     ' drop ,
 
 ;  IMMEDIATE
 
 : do  ' swap , ' >r , ' >r ,  here ; IMMEDIATE
 
-: loop 
-        ' r> , 
-        ' lit , 1 , 
-        ' + , 
-        ' dup ,     
-        ' r@ , 
-        ' < , 
-        ' not , 
-        '  swap , 
-        ' >r , 
+: loop
+        ' r> ,
+        ' lit , 1 ,
+        ' + ,
+        ' dup ,
+        ' r@ ,
+        ' < ,
+        ' not ,
+        '  swap ,
+        ' >r ,
         ' 0branch , ,
-        ' r> , 
+        ' r> ,
         ' drop ,
-        ' r> , 
+        ' r> ,
         ' drop ,
  ;  IMMEDIATE
 
@@ -152,7 +152,7 @@ then
   else
     repeat
 readce dup 34 = if drop 1 else emit 0 then
-    until 
+    until
   then ; IMMEDIATE
 
 : " compiling if
@@ -174,20 +174,20 @@ then
     else
       repeat
 readce dup 34 = if drop 1 else emit 0 then
-      until 
+      until
     then ; IMMEDIATE
 
-: g" 
-    dp @ 
+: g"
+    dp @
 
     repeat
-        readce dup 34 = if 
-            drop 0 1 allot c! 1 
+        readce dup 34 = if
+            drop 0 1 allot c! 1
         else 1 allot c! 0 then
-    until 
-  
-    compiling if 
-    ' lit , , 
+    until
+
+    compiling if
+    ' lit , ,
     then ; IMMEDIATE
 
 
@@ -271,7 +271,9 @@ compnumber
 
 : word-create inbuf word drop 0 inbuf create ' docol @ , ;
 
-: global inbuf word drop 0  inbuf create ' docol @ , ' lit , cell% allot , ' exit ,  ;
+: --new-global 0 swap create ' docol @ , ' lit , cell% allot , ' exit ,  ;
+
+: global inbuf word drop inbuf --new-global ;
 : constant inbuf word drop 0 inbuf create ' docol @ , ' lit , , ' exit , ;
 : add-constant inbuf word drop 0 inbuf create ' docol @ , ' lit , , ' + , ' exit , ;
 
@@ -289,7 +291,8 @@ include heap.frt
 drop
 
 include string.frt
-include hash.frt 
+include hash.frt
+include dynamic-dispatch.frt
 
 : enum 0 repeat
     inbuf word drop dup
