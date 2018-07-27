@@ -125,6 +125,14 @@ native "<", lt
     push rax
     jmp next
 
+; ( y x -- [x >> y] )
+native ">>", shr 
+  pop rax
+  pop rcx
+  shr rax, cl 
+  push rax
+  jmp next
+
 ; bitwise and
 ; ( y x -- y & x )
 native "and", and

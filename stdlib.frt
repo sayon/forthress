@@ -132,6 +132,17 @@ then
 : QUOTE 34 ;
 : TAB 9 ;
 
+
+: --new-global 0 swap create ' docol @ , ' lit , cell% allot , ' exit ,  ;
+
+( value buf - )
+: --new-constant 0 swap create ' docol @ , ' lit , , ' exit , ;
+
+: global inbuf word drop inbuf --new-global ;
+: constant inbuf word drop inbuf --new-constant ;
+: add-constant inbuf word drop 0 inbuf create ' docol @ , ' lit , , ' + , ' exit , ;
+
+
 : _"
   compiling if
     ' branch , here 0 , here
@@ -238,6 +249,23 @@ compnumber
 ; IMMEDIATE
 
 
+g" 0123456789ABCDEF" constant HEX_DIGITS
+
+: .hex
+  ." 0x"
+  15
+  16 0 do
+    over >r
+    dup 4 * r@
+    >> 0x 0F and
+    HEX_DIGITS + c@ emit
+    1 -
+    r> drop
+  loop
+  2drop
+;
+
+
 ( File I/O )
 : O_APPEND 0x 400 ;
 : O_CREAT 0x 40 ;
@@ -271,12 +299,6 @@ compnumber
 
 : word-create inbuf word drop 0 inbuf create ' docol @ , ;
 
-: --new-global 0 swap create ' docol @ , ' lit , cell% allot , ' exit ,  ;
-
-: global inbuf word drop inbuf --new-global ;
-: constant inbuf word drop 0 inbuf create ' docol @ , ' lit , , ' exit , ;
-: add-constant inbuf word drop 0 inbuf create ' docol @ , ' lit , , ' + , ' exit , ;
-
 ( structures )
 : struct 0 ;
 : field over inbuf word drop 0 inbuf create ' docol @ , ' lit , , ' + ,  ' exit , + ;
@@ -306,10 +328,12 @@ include file.frt
 include recursion.frt
 
 include runtime-meta.frt
-( include managed-string.frt )
 
 ." Forthress -- a tiny Forth from scratch > (c) Igor Zhirkov 2017-2018 " cr
 
-( include fib.frt
+( 
+include lisp.frt
+include fib.frt
 include native.frt
  include flisp.frt )
+
