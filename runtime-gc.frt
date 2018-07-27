@@ -1,4 +1,5 @@
-global current-reachable-value 
+
+global current-reachable-value
 1 current-reachable-value !
 
 : gc-flip-reachable
@@ -7,32 +8,51 @@ global current-reachable-value
 
 : gc-mark-reachable [managed-only]
     current-reachable-value @
-    over object-chunk-start >chunk-mark !
+    swap object-chunk-start >chunk-mark !
 ;
 
 : gc-mark-non-collectable [managed-only]
-    0 over object-chunk-start >chunk-collectable ! ;
+    0 swap object-chunk-start >chunk-collectable ! ;
 
-: gc-mark-reachable-recursive rec [managed-only]
+: gc-mark-collectable [managed-only]
+    1 swap object-chunk-start >chunk-collectable ! ;
+
+: gc-mark-reachable-recursive rec stop-if-null [managed-only]
     dup gc-mark-reachable
     recurse-addr object-for-each-field
 ;
 
-: gc-mark-non-collectable-recursive rec [managed-only]
+: gc-mark-non-collectable-recursive rec stop-if-null [managed-only]
     dup gc-mark-non-collectable
     recurse-addr object-for-each-field
 ;
 
-: gc-add-to-root-set [managed-only] gc-mark-non-collectable-recursive ;
+: gc-mark-collectable-recursive rec stop-if-null [managed-only]
+    dup gc-mark-collectable
+    recurse-addr object-for-each-field
+;
 
-: gc-analyze-stack-item
-  dup type-of if gc-mark-reachable-recursive else drop then 
+
+global gc-root-set
+0 gc-root-set !
+
+: gc-add-to-root-set
+Ref new 
+gc-root-set @ swap list-prepend
+                     gc-root-set !
+
+                     gc-root-set @ gc-mark-non-collectable
+                     gc-root-set @ >list-value @ gc-mark-non-collectable
+;
+
+: gc-analyze-reference
+  dup type-of if gc-mark-reachable-recursive else drop then
 ;
 
 : gc-analyze-stack
   sp
   stack_base over - cell% / 1 + 0 for
-  dup @ gc-analyze-stack-item
+  dup @ gc-analyze-reference
   cell% +
   endfor
   drop
@@ -44,17 +64,26 @@ global current-reachable-value
   heap-start
   repeat
   @ dup chunk-header% + type-of if
-    dup chunk-is-marked not if
-      dup >chunk-is-free @ not if
-        ( ." deleting " dup chunk-show cr) 
-        dup chunk-header% + delete 
-      then then then
+    dup chunk-is-marked not
+    over >chunk-collectable @ land
+    over >chunk-is-free @ not land
+    if
+          dup chunk-header% + delete 
+      then then
   >chunk-next dup @ not
   until
   drop ;
 
+: --gc-analyze-root-set-element
+@ stop-if-null @ stop-if-null gc-analyze-reference ;
+
+: gc-analyze-root-set
+  gc-root-set @ ' --gc-analyze-root-set-element list-foreach
+;
+
 : gc-collect
   gc-analyze-stack
+  gc-analyze-root-set
   gc-delete-unreachable
   gc-flip-reachable
 ;
@@ -62,14 +91,37 @@ global current-reachable-value
 global alloc-count
 10 constant ALLOCS-BEFORE-GC
 
-:override heap-alloc
-  heap-alloc-impl
+:override new
+impl-new
+  dup gc-mark-collectable
   alloc-count @ 1 + alloc-count !
-  alloc-count @ ALLOCS-BEFORE-GC % if
-    ( 0 alloc-count ! )
+  alloc-count @ ALLOCS-BEFORE-GC % not if
+    0 alloc-count !
     gc-collect
-  then ;
+  then
+;
 
+:override copy
+  dup >r
+  r@ gc-mark-non-collectable-recursive
+  impl-copy
+  r> gc-mark-collectable-recursive
+;
+
+( Might be buggy in case of allocations happening during destructors )
+:override delete
+dup >r
+r@ gc-mark-non-collectable
+impl-delete
+r> gc-mark-collectable
+;
+
+
+: singleton
+  inbuf word drop
+  dup inbuf --new-constant
+  Ref new dup gc-mark-non-collectable gc-add-to-root-set
+;
 
 
 ( GC test

@@ -49,7 +49,7 @@ global heap-size
 : chunk-init
     CHUNK_SIG over >chunk-sig  !
     0 over >chunk-next !
-    1 over >chunk-collectable !
+    0 over >chunk-collectable !
     dup chunk-mark-free
     0 over >chunk-meta !
     drop
@@ -151,13 +151,15 @@ then
 global heap-meta-printer
 
 : chunk-show
-    ." at " dup . ."  "
-    ." | next: "
-    dup >chunk-next @ .
-    ."  | size: "
+    dup chunk-header% + .hex ."  "
+  (  ." | nxt: "
+    dup >chunk-next @ .)
+    ."  | sz: "
     dup chunk-size .
     ."  | "
     dup >chunk-mark @ .
+    ."  | "
+    dup >chunk-collectable @ if ."   C " else ."  NC " then
     ."  | "
     dup >chunk-is-free @ if ." FREE  |" else ." ALLOC"
             ."  | "

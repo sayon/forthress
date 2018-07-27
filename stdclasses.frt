@@ -1,43 +1,49 @@
 class raw-cell class-end
 ' cell% raw-cell >class-size !
-raw-cell declare-show[ @ ." raw <" . ." >" ]end-show;
-raw-cell declare-ctor[ raw-cell cell% class-alloc swap over ! ]end-ctor;
+raw-cell show=[ @ ." raw <" .hex ." >" ]show;
+raw-cell ctor=[ cell% class-alloc dup -rot ! ]ctor;
 
-class int class-end
-' cell% int >class-size !
+: Ref raw-cell ;
 
-int declare-show[ @ . ]end-show;
-int declare-ctor[ cell% class-alloc dup -rot  ! ]end-ctor;
-: int-copy @ int new ;
-' int-copy int >class-copy !
+class Int class-end
+' cell% Int >class-size !
 
-: i int new ;
+Int show=[ @ . ]show;
+Int ctor=[ cell% class-alloc dup -rot  ! ]ctor;
+: int-copy @ Int new ;
+' int-copy Int >class-copy !
+
+: i Int new ;
 
 
-: ref raw-cell ;
 
-class pair
-ref :: >fst
-ref :: >snd
+class Pair
+Ref :: >fst
+Ref :: >snd
 class-end
 
-( --- managed string --- )
 
-class string class-end
-' count string >class-size !
 
-: string-show QUOTE emit prints QUOTE emit ;
-' string-show string >class-show !
+class List
+Ref  :: >list-value
+List :: >list-next
+class-end
 
-: m" ' h" execute compiling if
-       ' dup , ' string , ' manage ,
-     else
-       dup string manage
-     then ; IMMEDIATE
 
-( prefix str -- "prefix-str" )
-: ++
-  over count over count + 2 + heap-alloc dup string manage
-  string-prefix-with
-; 
+( list value -- new-list )
+: list-prepend List new ;
 
+( list fun -- )
+: list-foreach
+  >r
+repeat
+dup if
+  dup >list-value @ r@ execute
+  >list-next @ 0
+else 1 then
+until
+r> 2drop
+;
+
+: c list-prepend ; 
+List show=[ ." [ " ' --show-space list-foreach ." ]" ]show;

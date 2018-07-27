@@ -64,7 +64,6 @@ class-end
 : class-end cell% / swap >class-fields ! ;
 
 
-
 ( chunk-contents *classinf )
 : class-show >class-show @ execute  ;
 ' class-show heap-meta-printer !
@@ -92,16 +91,23 @@ class-end
        ' lit , " In word '" , ' prints , 
        ' this-word-name execute ' prints ,
        ' lit , " ': '" , ' prints ,
-       ' ? ,
+       ' .hex ,
        ' lit , " ' should be a managed type" , ' prints , ' cr ,
        ' exit ,
        ' then execute
 ; IMMEDIATE
 
-: show   [managed-only] dup type-of >class-show @ execute ;
-: new                           dup >class-ctor @ execute ;
-: copy   [managed-only] dup type-of >class-copy @ execute ;
-: delete [managed-only] dup type-of >class-dtor @ execute ;
+: stop-if-null
+  ' dup , ' not ,
+  ' if execute
+       '  drop , ' exit ,
+       ' then execute ; IMMEDIATE
+
+: show    dup not if ." <null>" drop exit then
+         [managed-only] dup type-of >class-show @ execute ;
+:dyn new                           dup >class-ctor @ execute ;
+:dyn copy   [managed-only] dup type-of >class-copy @ execute ;
+:dyn delete stop-if-null [managed-only] dup type-of >class-dtor @ execute ;
 : size   [managed-only] dup type-of >class-size @ execute ;
 
 : object-chunk-start [managed-only] chunk-header% - ;
@@ -113,28 +119,28 @@ class-end
 : object-for-each-field
   swap [managed-only]
   dup object-fields 0
-  for 
+  for
     2dup >r >r ( fun addr , addr fun )
     @ swap execute
     r> r> cell% +
-  endfor 
+  endfor
   2drop
 ;
 
-( addr fun - )
+(
 : object-for-each-field-reverse
   swap [managed-only]
   dup object-fields >r
   dup object-fields 1 - cells +
-  ( fun addr-last-field ,  fields )
   r> 0
    for 
-      2dup >r >r ( fun addr , addr fun )
+      2dup >r >r 
       @ swap execute
       r> r> cell% -
     endfor
     2drop
 ;
+)
 
 ( --- size --- )
 : default-size-impl type-of >class-fields @ cells
@@ -162,10 +168,10 @@ class-end
     drop exit then
 
   class-alloc-default dup >r
-  dup object-fields 0 do
+  dup object-fields 0 for
     dup -rot !
     cell% +
-  loop
+  endfor 
   drop r>
 ; ' default-ctor-impl default-ctor ! 
 
@@ -198,5 +204,17 @@ class-end
 
 include runtime-meta-diagnostic.frt
 include runtime-meta-syntax.frt
+
 include stdclasses.frt
+
 include runtime-gc.frt
+include managed-string.frt
+
+
+
+
+
+
+
+
+
