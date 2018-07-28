@@ -7,7 +7,7 @@
   r@ ."   size: "   >class-size @ ? cr
   r@ ."   copy: "   >class-copy @ ? cr
   r@ ."   show: "   >class-show @ ? cr
-  r@ ."   dtor: "   >class-dtor @ ? cr
+  ( r@ ."   dtor: "   >class-dtor @ ? cr )
   r@ >class-fields @ if
     ."   fields: " r@ >class-fields @ . cr
 

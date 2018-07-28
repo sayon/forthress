@@ -214,6 +214,9 @@ native "sp", sp
   push rsp
   jmp next
 
+native "ret_sp", ret_sp
+  push rstack 
+  jmp next
 
 native "exit", exit
     rpop pc
@@ -481,6 +484,7 @@ const last_word, last_word
 
 ; Stack base
 const stack_base, [stack_base]
+const rstack_base, rstack_start
 
 ; State cell address.
 ; The state cell stores either 1 (compilation mode) or 0 (interpretation mode)

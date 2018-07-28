@@ -6,7 +6,7 @@ struct
   cell% field >class-size ( has 0 arguments; returns 0 for string )
   cell% field >class-copy
   cell% field >class-show
-  cell% field >class-dtor
+  ( obsolete cell% field >class-dtor)
 
   ( -- Field count -- )
   cell% field >class-fields
@@ -17,7 +17,7 @@ end-struct class-entry%
 global default-show
 global default-copy
 global default-ctor
-global default-dtor
+( obsolete global default-dtor )
 global default-size
 
 
@@ -43,7 +43,7 @@ class-end
   default-show @  r@ >class-show !
   default-copy @  r@ >class-copy !
   default-ctor @  r@ >class-ctor !
-  default-dtor @  r@ >class-dtor !
+  ( obsolete default-dtor @  r@ >class-dtor !)
   default-size @  r@ >class-size !
 
   ( creating 'typename' word to return its class information address )
@@ -83,7 +83,9 @@ class-end
 ( addr classinf - 0/1 )
 : is-of-type swap type-of dup if = else 2drop 0 then ;
 
-: [managed-only]
+: ignore-null ' dup , ' not , ' if execute ' exit , ' then execute ; IMMEDIATE
+
+: managed-only
   ' dup ,
   ' type-of ,
   ' not ,
@@ -93,6 +95,7 @@ class-end
        ' lit , " ': '" , ' prints ,
        ' .hex ,
        ' lit , " ' should be a managed type" , ' prints , ' cr ,
+       ' .R , 
        ' exit ,
        ' then execute
 ; IMMEDIATE
@@ -104,20 +107,20 @@ class-end
        ' then execute ; IMMEDIATE
 
 : show    dup not if ." <null>" drop exit then
-         [managed-only] dup type-of >class-show @ execute ;
+         managed-only dup type-of >class-show @ execute ;
 :dyn new                           dup >class-ctor @ execute ;
-:dyn copy   [managed-only] dup type-of >class-copy @ execute ;
-:dyn delete stop-if-null [managed-only] dup type-of >class-dtor @ execute ;
-: size   [managed-only] dup type-of >class-size @ execute ;
+:dyn copy ignore-null managed-only dup type-of >class-copy @ execute ;
+( :dyn delete stop-if-null managed-only dup type-of >class-dtor @ execute ; )
+: size   managed-only dup type-of >class-size @ execute ;
 
-: object-chunk-start [managed-only] chunk-header% - ;
+: object-chunk-start managed-only chunk-header% - ;
 : object-name type-of >class-name @ ;
 : object-fields type-of >class-fields @ ;
 
 
 ( addr fun - )
 : object-for-each-field
-  swap [managed-only]
+  swap managed-only
   dup object-fields 0
   for
     2dup >r >r ( fun addr , addr fun )
@@ -129,7 +132,7 @@ class-end
 
 (
 : object-for-each-field-reverse
-  swap [managed-only]
+  swap managed-only
   dup object-fields >r
   dup object-fields 1 - cells +
   r> 0
@@ -164,8 +167,8 @@ class-end
 ( fieldN ... field2 field1 class -- addr )
 : default-ctor-impl
   dup >class-fields @ not if
-    ." Can not use default ctor for classes with 0 fields \n"
-    drop exit then
+    ." Class " >class-name @ prints ." : can not use default ctor for classes with 0 fields \n" 
+    exit then
 
   class-alloc-default dup >r
   dup object-fields 0 for
@@ -179,7 +182,8 @@ class-end
 ( --- copy --- )
 ( old - new )
 : default-copy-impl
-  [managed-only]
+  dup not if exit then 
+  managed-only
   dup type-of >r
   ( old , type )
   dup object-fields 1 - cells over +
@@ -190,17 +194,20 @@ class-end
     cell% -
   loop
   drop
-  r> new
+  r> dup >class-ctor @ execute 
 ; ' default-copy-impl default-copy !
 
-( --- dtor --- )
+( --- dtor --- obsolete
 : default-dtor-impl
-  dup >class-fields @ if
+  object-fields 
+  @ if
     dup ' delete object-for-each-field
+
+    0 over >class-fields 
   then
   heap-free
 ; ' default-dtor-impl default-dtor ! 
-
+)
 
 include runtime-meta-diagnostic.frt
 include runtime-meta-syntax.frt

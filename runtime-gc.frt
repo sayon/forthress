@@ -1,48 +1,48 @@
+: gc-set-collectable swap managed-only object-chunk-start >chunk-collectable ! ;
 
-global current-reachable-value
-1 current-reachable-value !
+: gc-mark-collectable managed-only object-chunk-start >chunk-collectable 1 swap ! ;
+: gc-mark-non-collectable managed-only object-chunk-start >chunk-collectable 0 swap ! ;
 
-: gc-flip-reachable
-  current-reachable-value @ not current-reachable-value !
+: gc-mark-non-collectable-recursive rec stop-if-null managed-only
+                                    dup gc-mark-non-collectable
+                                    recurse-addr object-for-each-field ;
+: gc-mark-collectable-recursive rec stop-if-null managed-only
+                                dup gc-mark-collectable
+                                recurse-addr object-for-each-field ;
+
+global gc-reachable-value
+1 gc-reachable-value !
+
+: gc-update-reachable-value
+  gc-reachable-value @ 1 +
+  gc-reachable-value ! ;
+
+: gc-is-reachable managed-only
+  object-chunk-start >chunk-mark @ gc-reachable-value @ =
 ;
 
-: gc-mark-reachable [managed-only]
-    current-reachable-value @
-    swap object-chunk-start >chunk-mark !
+: gc-mark-reachable stop-if-null managed-only
+    gc-reachable-value @ swap
+    object-chunk-start >chunk-mark !
 ;
 
-: gc-mark-non-collectable [managed-only]
-    0 swap object-chunk-start >chunk-collectable ! ;
 
-: gc-mark-collectable [managed-only]
-    1 swap object-chunk-start >chunk-collectable ! ;
-
-: gc-mark-reachable-recursive rec stop-if-null [managed-only]
+: gc-mark-reachable-recursive rec stop-if-null managed-only
     dup gc-mark-reachable
     recurse-addr object-for-each-field
 ;
 
-: gc-mark-non-collectable-recursive rec stop-if-null [managed-only]
-    dup gc-mark-non-collectable
-    recurse-addr object-for-each-field
-;
-
-: gc-mark-collectable-recursive rec stop-if-null [managed-only]
-    dup gc-mark-collectable
-    recurse-addr object-for-each-field
-;
 
 
 global gc-root-set
 0 gc-root-set !
 
 : gc-add-to-root-set
-Ref new 
+Ref new
 gc-root-set @ swap list-prepend
-                     gc-root-set !
-
+                     gc-root-set ! 
                      gc-root-set @ gc-mark-non-collectable
-                     gc-root-set @ >list-value @ gc-mark-non-collectable
+                     ( gc-root-set @ >list-value @ gc-mark-non-collectable)
 ;
 
 : gc-analyze-reference
@@ -56,9 +56,16 @@ gc-root-set @ swap list-prepend
   cell% +
   endfor
   drop
+
+  ret_sp
+  rstack_base over - cell% / 1 + 0 for
+  dup @ gc-analyze-reference
+  cell% +
+  endfor
+  drop
 ;
 
-: chunk-is-marked >chunk-mark @ current-reachable-value @ = ;
+: chunk-is-marked >chunk-mark @ gc-reachable-value @ = ;
 
 : gc-delete-unreachable
   heap-start
@@ -67,9 +74,8 @@ gc-root-set @ swap list-prepend
     dup chunk-is-marked not
     over >chunk-collectable @ land
     over >chunk-is-free @ not land
-    if
-          dup chunk-header% + delete 
-      then then
+    if dup chunk-header% + heap-free ( dup chunk-header% + delete ) then
+  then
   >chunk-next dup @ not
   until
   drop ;
@@ -82,10 +88,11 @@ gc-root-set @ swap list-prepend
 ;
 
 : gc-collect
+  ." Collecting" cr 
   gc-analyze-stack
   gc-analyze-root-set
   gc-delete-unreachable
-  gc-flip-reachable
+  gc-update-reachable-value
 ;
 
 global alloc-count
@@ -93,7 +100,7 @@ global alloc-count
 
 :override new
 impl-new
-  dup gc-mark-collectable
+  dup gc-mark-collectable-recursive
   alloc-count @ 1 + alloc-count !
   alloc-count @ ALLOCS-BEFORE-GC % not if
     0 alloc-count !
@@ -102,20 +109,22 @@ impl-new
 ;
 
 :override copy
+  dup gc-mark-non-collectable-recursive
   dup >r
-  r@ gc-mark-non-collectable-recursive
   impl-copy
+  dup gc-mark-collectable-recursive
   r> gc-mark-collectable-recursive
 ;
 
-( Might be buggy in case of allocations happening during destructors )
+( obsolete Might be buggy in case of allocations happening during destructors 
+
 :override delete
 dup >r
 r@ gc-mark-non-collectable
 impl-delete
 r> gc-mark-collectable
 ;
-
+)
 
 : singleton
   inbuf word drop
@@ -153,3 +162,4 @@ drop
 gc-collect
 heap-show
 )
+

@@ -52,9 +52,20 @@ until r> drop ;
 
 ( This can be defined as a pure forth word too :) 
 : .S
+  ." Stack:\n"
   sp
   stack_base over - cell% / 0 for
-  dup @ ? cr
+  ."    " dup @ ? cr
+  cell% +
+  endfor
+  drop
+;
+
+: .R
+  ." Return stack:\n"
+  ret_sp
+  rstack_base over - cell% / 0 for
+  ."    " dup @ ? cr
   cell% +
   endfor
   drop
@@ -110,13 +121,14 @@ r@ OFF_rsp + @
 ."     " cell%   + dup @ ? cr
 
 
-." Return stack : " cr 
-r@ OFF_rstack + @ 2 cells - 
+( ." Return stack : " cr )
+.R
+( r@ OFF_rstack + @ 2 cells - 
 ."     " cell% + dup   @ ."   " ?  cr
 ."   =>" cell% + dup   @ ."   " ?  cr
 ."     " cell% + dup   @ ."   " ?  cr
 ."     " cell% + dup   @ ."   " ?  cr
-."     " cell% + dup   @ ."   " ?  cr
+."     " cell% + dup   @ ."   " ?  cr )
 
 ( dump )
 ( cr ." dictionary " cr dump ) ( TODO: Add dump to file )
