@@ -315,6 +315,7 @@ drop
 include string.frt
 include hash.frt
 include dynamic-dispatch.frt
+include term.frt
 
 : enum 0 repeat
     inbuf word drop dup
