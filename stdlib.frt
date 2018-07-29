@@ -325,16 +325,19 @@ include term.frt
     inbuf string-eq until drop ;
 
 
-include file.frt
 include recursion.frt
 
 include runtime-meta.frt
+include file.frt
 
-." Forthress -- a tiny Forth from scratch > (c) Igor Zhirkov 2017-2018 " cr
+term-clear
+
+.GREEN[ ." Forthress" ]NOCOL. ." -- a tiny Forth from scratch (c) Igor Zhirkov 2017-2018 \n"
+
 
 ( 
 include lisp.frt
 include fib.frt
 include native.frt
- include flisp.frt )
+)
 
