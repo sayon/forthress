@@ -17,11 +17,11 @@ max-file-size allot constant read-file-buffer
 : file-read-text ( fd - a )
     read-file-buffer max-file-size sys-read .S
     read-file-buffer + 0 swap c!
-    read-file-buffer ;
+    read-file-buffer string-from-buffer ;
 
 : file-read-text-name ( name - a )
     file-open-read dup
     read-file-buffer max-file-size sys-read
     read-file-buffer + 0 swap c!
     file-close
-    read-file-buffer ;
+    read-file-buffer string-from-buffer ;
