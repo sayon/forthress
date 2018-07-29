@@ -78,7 +78,7 @@ class-end
 ( classinf - addr )
 : class-alloc-default dup >class-fields @ cells class-alloc ;
 
-: type-of dup addr-is-chunk-start if chunk-header% - >chunk-meta @ else drop 0 then ;
+: type-of  dup addr-is-chunk-start if chunk-header% - >chunk-meta @ else drop 0 then ;
 
 ( addr classinf - 0/1 )
 : is-of-type swap type-of dup if = else 2drop 0 then ;

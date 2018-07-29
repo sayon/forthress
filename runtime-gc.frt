@@ -1,9 +1,14 @@
 : gc-set-collectable swap managed-only object-chunk-start >chunk-collectable ! ;
 
-: gc-mark-collectable managed-only object-chunk-start >chunk-collectable 1 swap ! ;
-: gc-mark-non-collectable managed-only object-chunk-start >chunk-collectable 0 swap ! ;
+: gc-mark-collectable
+dup type-of not if drop exit then
+object-chunk-start >chunk-collectable 1 swap ! ;
+: gc-mark-non-collectable 
+dup type-of not if drop exit then
+." non collectable: " dup show  cr
+                          object-chunk-start >chunk-collectable 0 swap ! ;
 
-: gc-mark-non-collectable-recursive rec stop-if-null managed-only
+: gc-mark-non-collectable-recursive rec stop-if-null
                                     dup gc-mark-non-collectable
                                     recurse-addr object-for-each-field ;
 : gc-mark-collectable-recursive rec stop-if-null managed-only
@@ -28,25 +33,27 @@ global gc-reachable-value
 
 
 : gc-mark-reachable-recursive rec stop-if-null managed-only
+    dup gc-is-reachable if drop exit then 
     dup gc-mark-reachable
     recurse-addr object-for-each-field
 ;
-
 
 
 global gc-root-set
 0 gc-root-set !
 
 : gc-add-to-root-set
-Ref new
-gc-root-set @ swap list-prepend
-                     gc-root-set ! 
-                     gc-root-set @ gc-mark-non-collectable
+  Ref new
+  dup gc-mark-non-collectable
+  gc-root-set @ swap list-prepend
+  dup gc-mark-non-collectable
+  gc-root-set !
                      ( gc-root-set @ >list-value @ gc-mark-non-collectable)
 ;
 
-: gc-analyze-reference
-  dup type-of if gc-mark-reachable-recursive else drop then
+: gc-analyze-reference stop-if-null
+                       dup type-of if
+                         gc-mark-reachable-recursive else drop then
 ;
 
 : gc-analyze-stack
@@ -80,20 +87,17 @@ gc-root-set @ swap list-prepend
   until
   drop ;
 
-: --gc-analyze-root-set-element
-@ stop-if-null @ stop-if-null gc-analyze-reference ;
-
 : gc-analyze-root-set
-  gc-root-set @ ' --gc-analyze-root-set-element list-foreach
+  gc-root-set @ ' gc-analyze-reference list-foreach
 ;
 
 : gc-collect
-  ." Collecting" cr 
   gc-analyze-stack
-  gc-analyze-root-set
+  gc-analyze-root-set 
   gc-delete-unreachable
   gc-update-reachable-value
 ;
+
 
 global alloc-count
 10 constant ALLOCS-BEFORE-GC
@@ -107,6 +111,14 @@ impl-new
     gc-collect
   then
 ;
+
+: managed-global
+  0 Ref new
+  dup gc-add-to-root-set
+  >ptr ' constant execute
+;
+
+managed-global hello
 
 :override copy
   dup gc-mark-non-collectable-recursive
@@ -129,7 +141,7 @@ r> gc-mark-collectable
 : singleton
   inbuf word drop
   dup inbuf --new-constant
-  Ref new dup gc-mark-non-collectable gc-add-to-root-set
+  gc-add-to-root-set
 ;
 
 

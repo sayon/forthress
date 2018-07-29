@@ -1,9 +1,18 @@
 class raw-cell class-end
 ' cell% raw-cell >class-size !
+
 raw-cell show=[ @ ." raw <" .hex ." >" ]show;
 raw-cell ctor=[ cell% class-alloc dup -rot ! ]ctor;
 
-: Ref raw-cell ;
+class Ref
+  raw-cell :: >ptr
+class-end
+
+Ref ctor=[ cell% class-alloc dup -rot ! ]ctor;
+Ref show=[ @ ." & (" dup .hex ." ) "
+dup type-of if 
+  show
+  else .hex then   ]show;
 
 class Int class-end
 ' cell% Int >class-size !
