@@ -6,7 +6,6 @@ struct
   cell% field >class-size ( has 0 arguments; returns 0 for string )
   cell% field >class-copy
   cell% field >class-show
-  ( obsolete cell% field >class-dtor)
 
   ( -- Field count -- )
   cell% field >class-fields
@@ -17,7 +16,6 @@ end-struct class-entry%
 global default-show
 global default-copy
 global default-ctor
-( obsolete global default-dtor )
 global default-size
 
 
@@ -43,7 +41,6 @@ class-end
   default-show @  r@ >class-show !
   default-copy @  r@ >class-copy !
   default-ctor @  r@ >class-ctor !
-  ( obsolete default-dtor @  r@ >class-dtor !)
   default-size @  r@ >class-size !
 
   ( creating 'typename' word to return its class information address )
@@ -100,22 +97,27 @@ class-end
        ' then execute
 ; IMMEDIATE
 
+: object-chunk-start managed-only chunk-header% - ;
+: object-name type-of >class-name @ ;
+: object-fields type-of >class-fields @ ;
+
 : stop-if-null
   ' dup , ' not ,
   ' if execute
        '  drop , ' exit ,
        ' then execute ; IMMEDIATE
 
-: show    dup not if ." <null>" drop exit then
-         managed-only dup type-of >class-show @ execute ;
+: show
+  dup not if ." <null>" drop exit then
+  managed-only
+  dup object-chunk-start >chunk-is-free @ if ." <FREED MEMORY!>" drop exit then
+  dup type-of >class-show @ execute ;
+
 :dyn new                           dup >class-ctor @ execute ;
 :dyn copy ignore-null managed-only dup type-of >class-copy @ execute ;
 ( :dyn delete stop-if-null managed-only dup type-of >class-dtor @ execute ; )
 : size   managed-only dup type-of >class-size @ execute ;
 
-: object-chunk-start managed-only chunk-header% - ;
-: object-name type-of >class-name @ ;
-: object-fields type-of >class-fields @ ;
 
 
 ( addr fun - )
@@ -129,21 +131,6 @@ class-end
   endfor
   2drop
 ;
-
-(
-: object-for-each-field-reverse
-  swap managed-only
-  dup object-fields >r
-  dup object-fields 1 - cells +
-  r> 0
-   for 
-      2dup >r >r 
-      @ swap execute
-      r> r> cell% -
-    endfor
-    2drop
-;
-)
 
 ( --- size --- )
 : default-size-impl type-of >class-fields @ cells
@@ -197,17 +184,7 @@ class-end
   r> dup >class-ctor @ execute 
 ; ' default-copy-impl default-copy !
 
-( --- dtor --- obsolete
-: default-dtor-impl
-  object-fields 
-  @ if
-    dup ' delete object-for-each-field
-
-    0 over >class-fields 
-  then
-  heap-free
-; ' default-dtor-impl default-dtor ! 
-)
+include arg-checks.frt
 
 include runtime-meta-diagnostic.frt
 include runtime-meta-syntax.frt

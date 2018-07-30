@@ -18,3 +18,12 @@ last_word @ cfa swap >class-ctor !
 compilation-start ;
 
 : ]ctor;   ' ; execute ; IMMEDIATE
+
+: copy=[
+dup >class-name @ " copy" inbuf string-prefix-with ( classinf "classname-copy" )
+drop
+0 inbuf create ' docol @ ,
+last_word @ cfa swap >class-copy !
+compilation-start ;
+
+: ]copy;   ' ; execute ; IMMEDIATE

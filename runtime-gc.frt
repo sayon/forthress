@@ -3,10 +3,9 @@
 : gc-mark-collectable
 dup type-of not if drop exit then
 object-chunk-start >chunk-collectable 1 swap ! ;
-: gc-mark-non-collectable 
-dup type-of not if drop exit then
-." non collectable: " dup show  cr
-                          object-chunk-start >chunk-collectable 0 swap ! ;
+: gc-mark-non-collectable
+  dup type-of not if drop exit then
+  object-chunk-start >chunk-collectable 0 swap ! ;
 
 : gc-mark-non-collectable-recursive rec stop-if-null
                                     dup gc-mark-non-collectable

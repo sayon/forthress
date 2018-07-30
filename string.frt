@@ -64,7 +64,7 @@
 ( string in heap )
 : h" compiling not if
     0
-    repeat readc dup QUOTE = if
+    repeat readce dup QUOTE = if
         drop
         dup dp @ + 0 swap c!
         1 + heap-alloc dup dp @ string-copy 1

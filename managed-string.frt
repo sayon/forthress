@@ -18,4 +18,6 @@ class String class-end
   string-prefix-with
 ; 
 
-: string-from-buffer string-new dup String manage dup gc-mark-collectable ; 
+: string-from-buffer string-new dup String manage dup gc-mark-collectable ;
+
+String copy=[ string-new dup String manage ]copy;

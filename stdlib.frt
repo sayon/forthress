@@ -96,7 +96,8 @@ here    0 ,
 
 ( Now we can define comments :)
 
-
+( a b c - a b c a )
+: 2over >r over r> swap  ;
 : 2drop drop drop ;
 : 2over >r >r dup r> swap r> swap ;
 
@@ -328,15 +329,15 @@ include term.frt
 include recursion.frt
 
 include runtime-meta.frt
+include arg-checks.frt
 include file.frt
 
-term-clear
 
 .GREEN[ ." Forthress" ]NOCOL. ." -- a tiny Forth from scratch (c) Igor Zhirkov 2017-2018 \n"
 
 
-( 
 include lisp.frt
+( 
 include fib.frt
 include native.frt
 )
