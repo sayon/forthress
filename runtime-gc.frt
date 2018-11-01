@@ -3,14 +3,19 @@
 : gc-mark-collectable
 dup type-of not if drop exit then
 object-chunk-start >chunk-collectable 1 swap ! ;
+
 : gc-mark-non-collectable
   dup type-of not if drop exit then
   object-chunk-start >chunk-collectable 0 swap ! ;
 
-: gc-mark-non-collectable-recursive rec stop-if-null
+: gc-mark-non-collectable-recursive rec
+                                    stop-if-null
+                                    managed-only
                                     dup gc-mark-non-collectable
                                     recurse-addr object-for-each-field ;
-: gc-mark-collectable-recursive rec stop-if-null managed-only
+: gc-mark-collectable-recursive rec
+                                stop-if-null
+                                managed-only
                                 dup gc-mark-collectable
                                 recurse-addr object-for-each-field ;
 
@@ -31,8 +36,8 @@ global gc-reachable-value
 ;
 
 
-: gc-mark-reachable-recursive rec stop-if-null managed-only
-    dup gc-is-reachable if drop exit then 
+: gc-mark-reachable-recursive rec stop-if-null managed-only 
+    dup gc-is-reachable if drop exit then
     dup gc-mark-reachable
     recurse-addr object-for-each-field
 ;
@@ -75,16 +80,16 @@ global gc-root-set
 
 : gc-delete-unreachable
   heap-start
-  repeat
-  @ dup chunk-header% + type-of if
-    dup chunk-is-marked not
-    over >chunk-collectable @ land
-    over >chunk-is-free @ not land
-    if dup chunk-header% + heap-free ( dup chunk-header% + delete ) then
-  then
-  >chunk-next dup @ not
-  until
-  drop ;
+repeat
+@ dup chunk-header% + type-of if
+  dup chunk-is-marked not
+  over >chunk-collectable @ land
+  over >chunk-is-free @ not land
+  if dup chunk-header% + heap-free ( dup chunk-header% + delete ) then
+then
+>chunk-next dup @ not
+until
+drop ;
 
 : gc-analyze-root-set
   gc-root-set @ ' gc-analyze-reference list-foreach

@@ -12,12 +12,16 @@ class String class-end
        dup gc-mark-collectable
      then ; IMMEDIATE
 
-( prefix str -- "prefix-str" )
+( prefix str -- "prefix-str" 
 : ++
-  over count over count + 2 + heap-alloc dup String manage
+  over count over count + 1 + heap-alloc dup String manage
   string-prefix-with
-; 
+; ) 
 
 : string-from-buffer string-new dup String manage dup gc-mark-collectable ;
+
+
+: string-concat string-concat dup String manage dup gc-mark-collectable ; 
+: ++ string-concat ;
 
 String copy=[ string-new dup String manage ]copy;

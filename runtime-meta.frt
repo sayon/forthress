@@ -75,7 +75,7 @@ class-end
 ( classinf - addr )
 : class-alloc-default dup >class-fields @ cells class-alloc ;
 
-: type-of  dup addr-is-chunk-start if chunk-header% - >chunk-meta @ else drop 0 then ;
+:dyn type-of  dup addr-is-chunk-start if chunk-header% - >chunk-meta @ else drop 0 then ;
 
 ( addr classinf - 0/1 )
 : is-of-type swap type-of dup if = else 2drop 0 then ;
@@ -184,12 +184,12 @@ class-end
   r> dup >class-ctor @ execute 
 ; ' default-copy-impl default-copy !
 
-include arg-checks.frt
-
 include runtime-meta-diagnostic.frt
+include arg-checks.frt
 include runtime-meta-syntax.frt
 
 include stdclasses.frt
+
 
 include runtime-gc.frt
 include managed-string.frt

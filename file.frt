@@ -5,7 +5,7 @@
     2dup read-char-fd dup 10 = not over 13 = not land land if
            1 +  0
         else 0 swap c! drop  1 then
-    until ;
+    until drop ;
 
 
 256 KB constant max-file-size

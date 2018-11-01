@@ -109,6 +109,7 @@ r@ OFF_PC + @
 ."      " cell% +   dup ? ."     " dup @ ?  cr
 ."      " cell% +   dup ? ."     " dup @ ?  cr
 
+.R
 
 ." Stack : " cr 
 r@ OFF_rsp + @ 

@@ -201,7 +201,6 @@ global heap-meta-printer
     else drop drop
     then
 ;
-
 : decompile
    dup addr-is-chunk-start if
    dup . ."  " chunk-show-meta

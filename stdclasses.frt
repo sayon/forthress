@@ -1,7 +1,7 @@
 class raw-cell class-end
 ' cell% raw-cell >class-size !
 
-raw-cell show=[ @ ." raw <" .hex ." >" ]show;
+raw-cell show=[ @ ." raw <" ? ." >"  ]show;
 raw-cell ctor=[ cell% class-alloc dup -rot ! ]ctor;
 
 class Ref

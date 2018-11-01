@@ -99,7 +99,7 @@ symtab-dump cr
 
 h" init.lsp" lisp-eval-file cr
 
-: lisp-repl
+: lisp-rep   l
     repeat
         0 read-file-buffer c!
         ." > "

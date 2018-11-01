@@ -329,7 +329,6 @@ include term.frt
 include recursion.frt
 
 include runtime-meta.frt
-include arg-checks.frt
 include file.frt
 
 
@@ -337,8 +336,5 @@ include file.frt
 
 
 include lisp.frt
-( 
-include fib.frt
-include native.frt
-)
+
 

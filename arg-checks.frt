@@ -18,8 +18,6 @@
                                         ' exit ,
 ' else execute ' drop ,
                                        ' then execute ; IMMEDIATE
-;
-
 
 
 ( arg2 arg1 type2 )
@@ -44,3 +42,14 @@
        ' else execute ' drop ,
               ' then execute
   ' drop , ; IMMEDIATE
+
+
+: ::
+  cell% allot ! ( parent-classinf offset -- )
+
+  inbuf word drop 0 inbuf create ' docol @ ,
+  ' lit , over , ' :arg1 execute
+  ' lit , dup ,
+  ' + , ' exit ,
+  cell% +
+;
