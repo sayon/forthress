@@ -1,7 +1,3 @@
-: this-word-name
-  ' lit ,
-  last_word @ cell% + 1 + ,
-; IMMEDIATE
 
 : 2inc-by ( x y d -- x+d y+d )
 	>r r@ + swap r> + swap ;
@@ -64,7 +60,8 @@
 ( string in heap )
 : h" compiling not if
     0
-    repeat readce dup QUOTE = if
+    repeat
+    read-char-extended --read-non-escaped-quote if
         drop
         dup dp @ + 0 swap c!
         1 + heap-alloc dup dp @ string-copy 1

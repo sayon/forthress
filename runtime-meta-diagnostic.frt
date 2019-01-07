@@ -25,3 +25,5 @@
   r> drop
 ."  --- " cr
 ;
+
+: ?? object-name prints ;

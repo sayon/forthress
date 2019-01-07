@@ -1,8 +1,8 @@
-: read-char-fd ( fd mem - c )
+: read-char-fd-mem ( fd mem - c )
      dup >r 1 sys-read drop r> c@ ;
 
 : read-line-fd ( fd addr - ) repeat
-    2dup read-char-fd dup 10 = not over 13 = not land land if
+    2dup read-char-fd-mem dup 10 = not over 13 = not land land if
            1 +  0
         else 0 swap c! drop  1 then
     until drop ;

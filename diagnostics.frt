@@ -1,6 +1,10 @@
 ( diagnostics words: decompilation, exception handling )
 
 
+: this-word-name
+  ' lit ,
+  last_word @ cell% + 1 + ,
+; IMMEDIATE
 
 : info dup 9 + prints ." : " cfa . cr ; 
 : dump last_word @
@@ -136,3 +140,64 @@ r@ OFF_rsp + @
  r> drop ;
 
 
+global DEBUG
+0 DEBUG ! 
+
+: \[
+  ' DEBUG ,
+  ' @ ,
+  ' if execute
+
+  ; IMMEDIATE
+: \] ' then execute ; IMMEDIATE
+
+6 allot constant --stack-latest
+
+
+( argcount - ) 
+: :args
+  ' \[ execute
+  ' this-word-name execute ' prints , ' cr ,
+
+  ' dup , ' lit , 1 , ' >= , ' if execute
+  ' >r , 
+  ' lit , "    arg1: " , ' prints , ' dup , ' ? , ' cr ,
+  ' r> , 
+  ' then execute
+
+  ' dup , ' lit , 2 , ' >= , ' if execute
+  ' >r , 
+  ' >r , 
+  ' lit , "    arg2: " , ' prints , ' dup , ' ? , ' cr ,
+  ' r> , 
+  ' r> , 
+  ' then execute
+
+  ' dup , ' lit , 3 , ' >= , ' if execute
+  ' >r , 
+  ' >r , 
+  ' >r , 
+  ' lit , "    arg3: " , ' prints , ' dup , ' ? , ' cr ,
+  ' r> , 
+  ' r> , 
+  ' r> , 
+  ' then execute
+
+  ' dup , ' lit , 4 , ' >= , ' if execute
+  ' >r , 
+  ' >r , 
+  ' >r , 
+  ' >r , 
+  ' lit , "    arg4: " , ' prints , ' dup , ' ? , ' cr ,
+  ' r> , 
+  ' r> , 
+  ' r> , 
+  ' r> , 
+  ' then execute
+
+  ' cr , ' cr , 
+
+
+  ' \] execute
+  ' drop , 
+  ; IMMEDIATE

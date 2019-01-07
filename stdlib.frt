@@ -89,12 +89,11 @@ here    0 ,
 : sys-read  >r >r >r sys-read-no r> r> r> 0 0 0  syscall drop ;
 : sys-write >r >r >r sys-write-no r> r> r> 0 0 0  syscall drop ;
 
-: readc@ in_fd @ swap 1 sys-read ;
-: readc inbuf readc@ drop inbuf c@ ;
+: read-char-fd in_fd @ swap 1 sys-read ;
+: read-char inbuf read-char-fd drop inbuf c@ ;
 
-: ( repeat readc 41 = until ; IMMEDIATE
-
-( Now we can define comments :)
+: ( repeat read-char 41 = until ; IMMEDIATE
+: \ repeat read-char 10 = until ; IMMEDIATE \ Now we can write comments :)
 
 ( a b c - a b c a )
 : 2over >r over r> swap  ;
@@ -118,20 +117,27 @@ here    0 ,
 : compnumber compiling if ' lit , , then ;
 
 ( -- input character's code )
-: .' readc compnumber ; IMMEDIATE
+: .' read-char compnumber ; IMMEDIATE
 
-: readce readc dup .' \ = if
-         readc dup .' n = if
-           drop drop 10
-         else
-           drop drop 0
-         then
-then
-;
 
 : cr 10 emit ;
 : QUOTE 34 ;
 : TAB 9 ;
+: BACKSLASH 92 ;
+
+: read-char-extended ( -- char escaped? )
+  read-char
+  dup .' \ = if
+  drop
+  read-char case
+    .' n of 10 endof
+    .' \ of BACKSLASH endof
+    .' " of QUOTE endof
+    .' t of TAB endof
+    ( unknown escape chars are ignored )
+  endcase 1
+else 0 then
+;
 
 
 : --new-global 0 swap create ' docol @ , ' lit , cell% allot , ' exit ,  ;
@@ -144,12 +150,14 @@ then
 : add-constant inbuf word drop 0 inbuf create ' docol @ , ' lit , , ' + , ' exit , ;
 
 
+: --read-non-escaped-quote ( readchar escaped -- readchar yes-no)
+  not over QUOTE = land ;
+
 : _"
   compiling if
     ' branch , here 0 , here
     repeat
-readc dup 34 =
-if
+read-char-extended --read-non-escaped-quote if
   drop
   0 c, ( null terminator )
   ( label_to_link string_start )
@@ -163,15 +171,14 @@ then
     until
   else
     repeat
-readce dup 34 = if drop 1 else emit 0 then
+read-char-extended --read-non-escaped-quote if drop 1 else emit 0 then
     until
   then ; IMMEDIATE
 
 : " compiling if
       ' branch , here 0 , here
       repeat
-readce dup 34 =
-if
+read-char-extended --read-non-escaped-quote if
   drop
   0 c, ( null terminator )
   ( label_to_link string_start )
@@ -185,7 +192,7 @@ then
       until
     else
       repeat
-readce dup 34 = if drop 1 else emit 0 then
+read-char-extended --read-non-escaped-quote if drop 1 else emit 0 then
       until
     then ; IMMEDIATE
 
@@ -193,7 +200,7 @@ readce dup 34 = if drop 1 else emit 0 then
     dp @
 
     repeat
-        readce dup 34 = if
+        read-char-extended --read-non-escaped-quote if
             drop 0 1 allot c! 1
         else 1 allot c! 0 then
     until
@@ -205,9 +212,10 @@ readce dup 34 = if drop 1 else emit 0 then
 
 : ." ' " execute compiling if ' prints , then ; IMMEDIATE
 
-: read-digit readc dup .' 0 .' 9 in-range if .' 0 - else drop -1 then ;
+
+: read-digit read-char dup .' 0 .' 9 in-range if .' 0 - else drop -1 then ;
 : read-hex-digit
-  readc dup .' 0 .' 9 in-range if
+  read-char dup .' 0 .' 9 in-range if
     .' 0 -
   else dup .' a .' f in-range if
          .' a - 10 +
@@ -219,7 +227,7 @@ readce dup 34 = if drop 1 else emit 0 then
 then ;
 
 : read-oct-digit
-readc dup .' 0 .' 7 in-range if
+read-char dup .' 0 .' 7 in-range if
     .' 0 -
     else
     drop -1
@@ -332,9 +340,6 @@ include runtime-meta.frt
 include file.frt
 
 
-.GREEN[ ." Forthress" ]NOCOL. ." -- a tiny Forth from scratch (c) Igor Zhirkov 2017-2018 \n"
-
+.GREEN[ ." Forthress" ]NOCOL. ."  -- a tiny Forth from scratch (c) Igor Zhirkov 2017-2018 \n"
 
 include lisp.frt
-
-
