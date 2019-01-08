@@ -1,5 +1,3 @@
-   ." Forthless LISP (c) Igor Zhirkov 2018" cr
-
 include lisp-expr.frt
 include lisp-symtab.frt
 include lisp-parser.frt
@@ -72,31 +70,11 @@ include lisp-eval.frt
 
 
 : parse parser-init parse-lisp drop ;
-: e parse lisp-eval show cr ;
+: e parse 
+." Program: \n" dup show  cr
+lisp-eval drop cr ;
 
 
-m" (begin
-(define (quote y) 9 )
-(define (quote f) (lambda (x) (+ x y) ))
-(print (f 4) )
-(set (quote y) 1)
-(print (f 4) )
-) " drop
-
-\ TODO function binding argument is not ok
- 
-m" (begin
-(define (quote f) (lambda () 
-   (begin 
-      (print \"hello!\" ) 
-      (print \" world\" ) 
-)))
-
-(f)
-
-)"  drop
-
-m" 
-( (lambda () (print \"hey!\" )) )
-" e 
+: lisp-init  _" init.lsp" file-read-text-name e ; 
+lisp-init
 

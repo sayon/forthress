@@ -72,7 +72,7 @@
     then
     until
 else
-' " execute ' string-new ,
+' " execute ' string-new ,                    ( " )
 then
 ; IMMEDIATE
 

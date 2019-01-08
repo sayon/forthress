@@ -125,19 +125,24 @@ here    0 ,
 : TAB 9 ;
 : BACKSLASH 92 ;
 
-: read-char-extended ( -- char escaped? )
-  read-char
+( word-for-reading - code escaped? ) 
+: read-char-extended-with 
+ >r r@ execute 
   dup .' \ = if
   drop
-  read-char case
+  r@ execute case
     .' n of 10 endof
     .' \ of BACKSLASH endof
-    .' " of QUOTE endof
+    .' " of QUOTE endof                 ( " )
     .' t of TAB endof
     ( unknown escape chars are ignored )
   endcase 1
 else 0 then
+r> drop
 ;
+
+: read-char-extended ( -- char escaped? )
+  ' read-char read-char-extended-with ;
 
 
 : --new-global 0 swap create ' docol @ , ' lit , cell% allot , ' exit ,  ;

@@ -251,7 +251,7 @@ then ;
   1 :args
     parse-skip-ws
     parse-number if i lisp-number new 1 exit then
-    parse-string if lisp-string new 1 exit then
+    parse-string if string-unescape lisp-string new 1 exit then
     parse-list if 1 exit then
     parse-pair if 1 exit then
     " nil" parse-keyword if 0 1 exit then
