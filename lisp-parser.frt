@@ -167,17 +167,11 @@ global dispatch-parse-lisp
   over string-prefix if count parser-advance 1
                      else drop 0 then ;
 
-: lisp-pair-reverse
-  dup >lisp-pair-car @ copy
-  swap >lisp-pair-cdr @ copy
-  cons ;
-
-
 : parse-list-rev
   1 :args
   dup copy >r
   " (" parse-keyword not if drop r> 0 exit then 
-  0 >r
+  lisp-nil >r
 repeat
 parse-skip-ws
 " )" parse-keyword if r> r> drop 1 1 else
@@ -190,17 +184,6 @@ until
 ;
 
 
-: lisp-list-reverse
-  1 :args
-  ignore-null
-  0 swap
-    repeat
-    dup if
-      lisp-pair-destruct -rot cons swap 0
-    else drop 1
-    then
-    until
-;
 
 
 : parse-list ( parser - parser 0 | parser list 1 )
@@ -254,7 +237,7 @@ then ;
     parse-string if string-unescape lisp-string new 1 exit then
     parse-list if 1 exit then
     parse-pair if 1 exit then
-    " nil" parse-keyword if 0 1 exit then
+    \ " nil" parse-keyword if 0 1 exit then
     " #t" parse-keyword if lisp-true 1 exit then
     " #f" parse-keyword if lisp-false 1 exit then
     parse-symbol if 1 exit then

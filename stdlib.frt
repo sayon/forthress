@@ -3,7 +3,10 @@
 : rot >r swap r> swap ;
 : -rot swap >r swap  r> ;
 
-: over >r dup r> swap ;
+
+: over >r dup r> swap ; 
+: over2  >r over r> swap ;
+
 : 2dup over over ;
 
 : <> = not ;
@@ -82,6 +85,14 @@ here    0 ,
         ' drop ,
  ;  IMMEDIATE
 
+: :while-condition: ' repeat execute ; IMMEDIATE 
+: :perform: 
+    ' if execute  
+    inbuf word drop inbuf find cfa  ,
+    ' lit , 0 , 
+    ' else execute 
+    ' lit , 1 , ' then execute 
+    ' until execute ; IMMEDIATE
 
 : sys-read-no 0 ;
 : sys-write-no 1 ;
@@ -98,6 +109,7 @@ here    0 ,
 ( a b c - a b c a )
 : 2over >r over r> swap  ;
 : 2drop drop drop ;
+: 3drop drop drop drop ;
 : 2over >r >r dup r> swap r> swap ;
 
 : case 0 ; IMMEDIATE

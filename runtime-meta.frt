@@ -1,3 +1,9 @@
+( 
+Message handlers. 
+A class has a pointer to a list of handlers
+Inheriting something from a class makes us chain method handlers?
+)
+
 struct
   cell% field >class-name
 

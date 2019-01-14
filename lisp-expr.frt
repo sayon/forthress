@@ -2,7 +2,6 @@
 
 class Lisp class-end
 
-
 class lisp-number
   Int :: >lisp-number-value
 class-end
@@ -19,6 +18,18 @@ class lisp-pair
   Lisp :: >lisp-pair-car
   Lisp :: >lisp-pair-cdr
 class-end
+: cons lisp-pair new ;
+: lisp-car >lisp-pair-car @ ;
+: lisp-cdr >lisp-pair-cdr @ ;
+: lisp-is-pair lisp-pair is-of-type ;
+
+class lisp-nil-class class-end
+lisp-nil-class ctor=[ class-alloc-default ]ctor;
+lisp-nil-class show=[ drop ." nil"]ctor;
+\ : nil-copy ; ' nil-copy lisp-nil-class >class-copy !
+
+lisp-nil-class new singleton lisp-nil
+: lisp-nil? lisp-nil-class is-of-type ; 
 
 class lisp-builtin
       raw-cell :: >lisp-builtin-xt
@@ -47,48 +58,9 @@ class-end
 
 lisp-number  show=[ >lisp-number-value @ show ]show;
 lisp-string  show=[ >lisp-string-value @ show ]show;
-lisp-bool    show=[ >lisp-bool-value @ @ if ." true" else ." false" then ]show;
-: lisp-pair-destruct dup >lisp-pair-car @ swap >lisp-pair-cdr @ ;
+lisp-bool    show=[ >lisp-bool-value @ @ if ." true" else ." false" then ]show; 
 
-( list fun -- )
-: lisp-list-foreach
-  >r
-repeat
-dup if
-  dup >lisp-pair-car @ r@ execute
-  >lisp-pair-cdr @ 0
-else 1 then
-until
-r> 2drop
-;
-
-: lisp-list-map rec
-                >r
-                dup if
-                  lisp-pair-destruct ( car cdr )
-                  swap r@ execute swap r> recurse swap lisp-pair new
-                else r> drop  then
-;
-
-
-
-: lisp-is-pair lisp-pair is-of-type ;
-
-: lisp-is-list
-  repeat
-    dup lisp-is-pair if >lisp-pair-cdr @ 0 else 1 then
-  until
-  not
-;
-
-: lisp-show-list ( assumes a list ! )
-    ." ("
-    dup if
-      lisp-pair-destruct swap show then
-      repeat
-      dup if lisp-pair-destruct swap ."  " show  0 else ." )" drop 1 then
-      until
-;
+include lisp-list.frt
 
 lisp-pair show=[ 
   dup lisp-is-list if
@@ -111,18 +83,21 @@ lisp-compound show=[
 lisp-unspecific ctor=[ class-alloc-default ]ctor;
 lisp-unspecific show=[ drop ." # "]ctor;
 
+
 1 i lisp-bool new singleton lisp-true
 0 i lisp-bool new singleton lisp-false
-lisp-unspecific new singleton lisp-#
+
+
+lisp-unspecific new singleton lisp-# 
+\  : lisp-unspecific-copy ; ' lisp-unspecific-copy lisp-unspecific >class-copy !
 
 lisp-error show=[ dup >lisp-error-string @ show >lisp-error-lisp @ show ]show;
 
 
 : li i lisp-number new ;
-: cons lisp-pair new ;
 : lambda lisp-compound new ;
 : s lisp-symbol new ;
-: lsp" ' m" execute  compiling if
+: lsp" ' m" execute  compiling if ( ") 
          ' lisp-string , ' new ,
        else
          lisp-string new
@@ -130,3 +105,13 @@ lisp-error show=[ dup >lisp-error-string @ show >lisp-error-lisp @ show ]show;
 
 
 : lisp-is-error lisp-error is-of-type ;
+
+: lisp-bool-is-true ignore-null @ @ 0 <> ;
+: lisp-bool-from-forth 0 = if lisp-false else lisp-true then ;
+
+: lisp-bool-from-int lisp-number :arg1
+ >lisp-number-value @ @
+ if lisp-true else lisp-false then 
+;
+
+

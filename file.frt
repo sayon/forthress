@@ -25,3 +25,9 @@ max-file-size allot constant read-file-buffer
     read-file-buffer + 0 swap c!
     file-close
     read-file-buffer string-from-buffer ;
+
+: file-read-line ( descr - mstring )
+  0 read-file-buffer read-line-fd
+  read-file-buffer string-from-buffer
+;
+

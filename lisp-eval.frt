@@ -1,146 +1,163 @@
-    (
-    " <"        ' lisp-builtin-<         lisp-builtin symtab-add
-    " print"    ' lisp-builtin-print     lisp-builtin symtab-add
-    " eql"      ' lisp-builtin-eql       lisp-builtin symtab-add
-    " cond"     ' lisp-special-cond      lisp-special symtab-add
-    " symbol?"  ' lisp-builtin-symbol?   lisp-builtin symtab-add
-    " error?"   ' lisp-builtin-error?    lisp-builtin symtab-add
-    " string?"  ' lisp-builtin-string?   lisp-builtin symtab-add
-    " pair?"    ' lisp-builtin-pair?     lisp-builtin symtab-add
-    )
-
 global dispatch-lisp-eval
-: lisp-eval dup if dispatch-lisp-eval @ execute then ;
+: lisp-eval ignore-null dispatch-lisp-eval @ execute ;
 
 
-: lisp-extract-args-1 lisp-pair-destruct drop ; 
-: lisp-extract-args-2 lisp-pair-destruct lisp-pair-destruct drop ;
+: lisp-extract-args-1 
+' lisp-pair-destruct , 
+' drop , 
+' dup , 
+' lisp-error , 
+' is-of-type , 
+' if execute
+' exit ,
+' then execute 
+; IMMEDIATE
+
+: lisp-extract-args-2 ' lisp-pair-destruct , ' lisp-pair-destruct , ' drop , 
+' >r , ( arg1 , arg2 )
+' dup , ' lisp-error , ' is-of-type , 
+' if execute
+' r> , ' drop , 
+' exit ,
+' then execute 
+' r> ,  ( arg1 arg2 )
+' dup , ' lisp-error , ' is-of-type , 
+' if execute
+' swap , ' drop , 
+' exit ,
+' then execute 
+; IMMEDIATE
 
 
-: lisp-lift ( i1 i2 op  - [op^ i1 i2 ] ) lisp-number :arg2 ( lisp-number :arg3 )
-            over  lisp-is-error if drop swap drop exit then
-            2over lisp-is-error if 2drop exit then
+: lisp-extract-args-3 ' lisp-pair-destruct , ' lisp-pair-destruct , ' lisp-pair-destruct  , ' drop , 
+' >r , ' >r ,  ( arg1 , arg3 arg2 )
+' dup , ' lisp-error , ' is-of-type , ' if execute
+' r> , ' drop , ' r> , ' drop , ' exit , ' then execute
+' r> , ( arg1 arg2 , arg3 )
+' dup , ' lisp-error , ' is-of-type , ' if execute
+' r> , ' drop , 
+' swap , ' drop , 
+' exit , ' then execute 
 
-            >r
-            >lisp-number-value @ @ swap >lisp-number-value @ @ swap
-            r> execute li ;
+' r> , ( arg1 arg2 arg3 )
+' dup , ' lisp-error , ' is-of-type , ' if execute
+' swap , ' drop , 
+' swap , ' drop , 
+' exit , ' then execute 
+; IMMEDIATE
 
-
-: lisp-lift-+ ' + lisp-lift ;
-: lisp-lift-- ' - lisp-lift ;
-: lisp-lift-* ' * lisp-lift ;
-: lisp-lift-/ ' / lisp-lift ;
-
-( lisp acc op^ - remaining-args  newacc op^ )
-: lisp-builtin-op-rec
-
-  >r
-  swap
-  lisp-pair-destruct ( acc car cdr )
-  -rot ( cdr acc car )
-  r@ execute r>
-;
-
-( lisp op^ - ) 
-: lisp-builtin-op
-  lisp-pair :arg2
-
-  >r lisp-pair-destruct ( car cdr )
-
-  dup not if
-    ." An operation should be applied to more than one operand!" r> drop 2drop exit then
-
-  swap r>
-repeat
-  lisp-builtin-op-rec 2over not
-until
-drop swap drop 
-;
-
-: lisp-builtin-+  ' lisp-lift-+ lisp-builtin-op ;
-: lisp-builtin--  ' lisp-lift-- lisp-builtin-op ;
-: lisp-builtin-*  ' lisp-lift-* lisp-builtin-op ;
-: lisp-builtin-/  ' lisp-lift-/ lisp-builtin-op ;
-
-
-: lisp-builtin-< lisp-extract-args-2
- >lisp-number-value @ swap >lisp-number-value @ > Int new lisp-number new ;
 
 : lisp-special-quote lisp-extract-args-1 ;
+
+: lisp-builtin-cons lisp-extract-args-2 swap cons ;
+
+: lisp-builtin-car lisp-extract-args-1 lisp-pair-destruct drop  ;
+
+: lisp-builtin-cdr lisp-extract-args-1 lisp-pair-destruct swap drop  ;
 
 : lisp-builtin-print lisp-extract-args-1
                      dup type-of
                      case
                        lisp-string of  dup @ prints endof
                        over show
-                     endcase
+                     endcase ;
+
+: lisp-builtin-symbol? lisp-extract-args-1 lisp-symbol is-of-type lisp-bool-from-forth ;
+: lisp-builtin-nil? lisp-extract-args-1 not lisp-bool-from-forth ;
+: lisp-builtin-cons? lisp-extract-args-1 
+    dup not if lisp-true 
+    else lisp-symbol is-of-type lisp-bool-from-forth then ;
+
+: lisp-builtin-number? lisp-extract-args-1 lisp-number is-of-type lisp-bool-from-forth ;
+: lisp-builtin-string? lisp-extract-args-1 lisp-string is-of-type lisp-bool-from-forth ;
+
+: lisp-special-if
+    lisp-extract-args-3 
+    >r >r lisp-eval lisp-bool-is-true if
+    r> r> drop lisp-eval else
+    r> drop r> lisp-eval then 
 ;
 
-
-: lisp-special-begin dup if  
-    repeat
-    lisp-pair-destruct >r lisp-eval r>  ( y xs ) 
-    dup not ( y xs 0? ) 
-    until 
-    drop
-    else drop lisp-# then 
+: lisp-builtin-progn 
+dup lisp-nil? if drop lisp-# else lisp-list-last then 
 ;
 
-
-: lisp-special-lambda lisp-extract-args-2
-                      swap lisp-compound new ;
+: lisp-special-lambda lisp-extract-args-2 swap lisp-compound new ;
 
 
-( x::xs y::ys -- xs ys x y  )
-: lisp-two-list-destruct
-  >r lisp-pair-destruct ( x xs , y::ys)
-  swap r> lisp-pair-destruct ( xs x y ys )
-  -rot
-  ;
+
+( 
+>r 
+repeat 
+over lisp-nil? not over lisp-nil? not land if
+    lisp-two-list-destruct r@ execute 0
+     else 2drop 1 then
+until
+r> drop ;  )
 
 
-: lisp-assign-args ( argsvalues args )
+( : lisp-assign-args 
   rec
   2dup 0 = swap 0 = land if 2drop exit then
   lisp-two-list-destruct >lisp-symbol-name @ swap symtab-add
   recurse
+;)
+
+: lisp-lift-num 
+  >r 
+  >lisp-number-value @ @ swap 
+  >lisp-number-value @ @ swap 
+  r> execute li ; 
+
+: lisp-builtin-+ lisp-extract-args-2 ' + lisp-lift-num ; 
+: lisp-builtin-- lisp-extract-args-2 ' - lisp-lift-num ; 
+: lisp-builtin-* lisp-extract-args-2 ' * lisp-lift-num ; 
+: lisp-builtin-/ lisp-extract-args-2 ' / lisp-lift-num ; 
+: lisp-builtin-< lisp-extract-args-2 ' < lisp-lift-num >lisp-number-value @ @ lisp-bool-from-forth ;
+
+: lisp-assign-arg ( symb val ) 
+swap >lisp-symbol-name @ swap symtab-add ;
+
+( define name val )
+: lisp-builtin-define
+  lisp-extract-args-2
+    lisp-eval
+  lisp-assign-arg
+  lisp-#
 ;
+
 
 : lisp-apply ( arg builtin/special/compound - res )
   dup type-of case
+
     lisp-builtin of
-      swap
-      '  lisp-eval lisp-list-map ( evaluate all arguments in a call-by-value fashion )
-      swap >lisp-builtin-xt @ @  ( execute implementation in forth )
-      execute
-    endof
-    lisp-special of
-      ( specials are different from builtins because they do not force argument evaluation )
-      >lisp-special-xt @ @
-      execute
+      swap ' lisp-eval lisp-list-map swap 
+      >lisp-builtin-xt @ @ execute 
     endof
 
-    lisp-compound of
+    lisp-special of >lisp-special-xt @ @ execute endof
+
+    lisp-compound of 
+      swap
+      '  lisp-eval lisp-list-map 
+      swap 
       symtab-save >r
       >r
       ( args , oldsymtab compound)
-      r@ >lisp-compound-args @ lisp-assign-args if
-        r> >lisp-compound-body @
-        lisp-eval
-      else
-        drop ( args )
-        r> m" Invalid arguments count: " lisp-error new
-      then
-      r> symtab-restore
-    endof
-
-  endcase ;
+      r@ >lisp-compound-args @ swap ' lisp-assign-arg lisp-list-apply-2 
+      ( , oldsymtab compound )  
+      r> >lisp-compound-body @ lisp-eval
+      r> symtab-restore 
+    endof 
+     .RED[ ." Can not apply: " ]NOCOL. over ? cr 
+     drop drop lisp-# swap
+  endcase
+;
 
 
 : lisp-special-quote lisp-extract-args-1 ;
 
-: lisp-special-set
-
+: lisp-special-set 
   lisp-extract-args-2
 
   lisp-eval swap lisp-eval ( val sym )
@@ -159,14 +176,44 @@ drop swap drop
   then
 ;
 
-( define name val )
-: lisp-builtin-define
-  lisp-extract-args-2
-  swap >lisp-symbol-name @ swap
-  symtab-add
-  lisp-#
-;
+: lisp-builtin-eq  lisp-extract-args-2 = lisp-bool-from-forth ;
 
+: --lisp-builtin-eql rec
+2dup lor not if 2drop lisp-true else
+    over type-of over type-of = if
+
+    over type-of case
+
+        lisp-number of 
+            swap >lisp-number-value @ @ 
+            swap >lisp-number-value @ @  = 
+            lisp-bool-from-forth
+        endof
+
+        lisp-string of 
+            swap >lisp-string-value @ 
+            swap >lisp-string-value @ string-eq 
+            lisp-bool-from-forth
+        endof
+        
+        lisp-bool of 
+            lisp-bool-is-true swap lisp-bool-is-true = 
+            lisp-bool-from-forth
+        endof
+
+        lisp-symbol of lisp-builtin-eq endof
+
+        lisp-pair of 
+           lisp-two-list-destruct
+           recurse lisp-bool-is-true >r recurse lisp-bool-is-true r> land
+           lisp-bool-from-forth 
+        endof
+    endcase 
+    else 2drop lisp-false then 
+then
+; 
+
+: lisp-builtin-eql lisp-extract-args-2 --lisp-builtin-eql ; 
 
 ( lisp - lisp )
 : impl-lisp-eval
@@ -196,4 +243,6 @@ drop swap drop
       lisp-apply
     endof
 
-  endcase ; ' impl-lisp-eval dispatch-lisp-eval !
+  endcase 
+
+; ' impl-lisp-eval dispatch-lisp-eval !
