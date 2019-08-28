@@ -1,9 +1,6 @@
 : lisp-pair-destruct lisp-pair :arg1 dup >lisp-pair-car @ swap >lisp-pair-cdr @ ;
 
-: lisp-pair-reverse
-  dup >lisp-pair-car @ copy
-  swap >lisp-pair-cdr @ copy
-  cons ;
+: lisp-pair-reverse dup lisp-car copy swap lisp-cdr copy cons ;
 
 ( [x::xs] acc f - xs [f x acc] f ) 
 : lisp-list-foldl-rec
@@ -23,17 +20,15 @@
 
 : lisp-list-reverse lisp-nil ' cons lisp-list-foldl ;
 
+: lisp-list-foreach-rec >r lisp-pair-destruct swap r@ execute r> ;
+
 ( list fun -- )
 : lisp-list-foreach
-  >r
-repeat
-dup lisp-nil? not if
-  dup >lisp-pair-car @ r@ execute
-  >lisp-pair-cdr @ 0
-else 1 then
-until
-r> 2drop
-;
+    :while-condition: 
+        over lisp-nil? not
+    :perform: lisp-list-foreach-rec
+
+    2drop ;
 
 
 : lisp-list-map-rev-rec ( [x::xs] acc f -  xs [x'::acc] f )
@@ -93,6 +88,6 @@ dup lisp-nil? if exit then
 :while-condition: 
     dup lisp-is-last-element not
 :perform: lisp-cdr 
-    swap drop 
+    lisp-car
 ;
 

@@ -51,9 +51,9 @@ global dispatch-lisp-eval
 
 : lisp-builtin-cons lisp-extract-args-2 swap cons ;
 
-: lisp-builtin-car lisp-extract-args-1 lisp-pair-destruct drop  ;
+: lisp-builtin-car lisp-extract-args-1 lisp-car ; 
 
-: lisp-builtin-cdr lisp-extract-args-1 lisp-pair-destruct swap drop  ;
+: lisp-builtin-cdr lisp-extract-args-1 lisp-cdr ; 
 
 : lisp-builtin-print lisp-extract-args-1
                      dup type-of
@@ -63,13 +63,17 @@ global dispatch-lisp-eval
                      endcase ;
 
 : lisp-builtin-symbol? lisp-extract-args-1 lisp-symbol is-of-type lisp-bool-from-forth ;
-: lisp-builtin-nil? lisp-extract-args-1 not lisp-bool-from-forth ;
-: lisp-builtin-cons? lisp-extract-args-1 
-    dup not if lisp-true 
-    else lisp-symbol is-of-type lisp-bool-from-forth then ;
+: lisp-builtin-nil? lisp-extract-args-1 lisp-nil? lisp-bool-from-forth ;
+: lisp-builtin-cons?  lisp-extract-args-1 lisp-pair is-of-type lisp-bool-from-forth ;
 
 : lisp-builtin-number? lisp-extract-args-1 lisp-number is-of-type lisp-bool-from-forth ;
 : lisp-builtin-string? lisp-extract-args-1 lisp-string is-of-type lisp-bool-from-forth ;
+
+: lisp-builtin-error
+." Error: " lisp-builtin-print cr
+." Environment: " cr symtab-dump cr
+bye 
+;
 
 : lisp-special-if
     lisp-extract-args-3 
@@ -84,24 +88,6 @@ dup lisp-nil? if drop lisp-# else lisp-list-last then
 
 : lisp-special-lambda lisp-extract-args-2 swap lisp-compound new ;
 
-
-
-( 
->r 
-repeat 
-over lisp-nil? not over lisp-nil? not land if
-    lisp-two-list-destruct r@ execute 0
-     else 2drop 1 then
-until
-r> drop ;  )
-
-
-( : lisp-assign-args 
-  rec
-  2dup 0 = swap 0 = land if 2drop exit then
-  lisp-two-list-destruct >lisp-symbol-name @ swap symtab-add
-  recurse
-;)
 
 : lisp-lift-num 
   >r 
@@ -119,9 +105,15 @@ r> drop ;  )
 swap >lisp-symbol-name @ swap symtab-add ;
 
 ( define name val )
-: lisp-builtin-define
+: lisp-special-define
   lisp-extract-args-2
-    lisp-eval
+  lisp-eval
+  lisp-assign-arg
+  lisp-#
+;
+
+: lisp-special-defmacro
+  lisp-extract-args-2
   lisp-assign-arg
   lisp-#
 ;
@@ -214,6 +206,8 @@ then
 ; 
 
 : lisp-builtin-eql lisp-extract-args-2 --lisp-builtin-eql ; 
+
+: lisp-builtin-eval lisp-extract-args-1 lisp-eval ; 
 
 ( lisp - lisp )
 : impl-lisp-eval

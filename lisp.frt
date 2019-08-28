@@ -19,30 +19,33 @@ include lisp-eval.frt
 : --add-builtin raw-cell new lisp-builtin new symtab-add ;
 
 : symtab-init
-  m" +"       ' lisp-builtin-+        --add-builtin
-  m" -"       ' lisp-builtin--        --add-builtin
-  m" *"       ' lisp-builtin-*        --add-builtin
-  m" /"       ' lisp-builtin-/        --add-builtin
-  m" <"       ' lisp-builtin-<        --add-builtin 
-  m" quote"   ' lisp-special-quote    --add-special
-  m" define"  ' lisp-builtin-define   --add-special
-  m" print"   ' lisp-builtin-print    --add-builtin
-  m" progn"   ' lisp-builtin-progn    --add-builtin
-  m" lambda"  ' lisp-special-lambda   --add-special
-  m" set"     ' lisp-special-set      --add-special
-  m" <"       ' lisp-builtin-<        --add-builtin
-  m" eql"     ' lisp-builtin-eql      --add-builtin
-  m" eq"      ' lisp-builtin-eq       --add-builtin
-  m" car"     ' lisp-builtin-car      --add-builtin
-  m" cdr"     ' lisp-builtin-cdr      --add-builtin
-  m" cons"    ' lisp-builtin-cons     --add-builtin
-  m" cons?"   ' lisp-builtin-cons?    --add-builtin
-  m" nil?"    ' lisp-builtin-nil?     --add-builtin
-  m" symbol?" ' lisp-builtin-symbol?  --add-builtin
-  m" number?" ' lisp-builtin-number?  --add-builtin
-  m" string?" ' lisp-builtin-string?  --add-builtin
-  m" set"       0                     --add-builtin
-  m" if"      ' lisp-special-if       --add-special
+  m" +"        ' lisp-builtin-+        --add-builtin
+  m" -"        ' lisp-builtin--        --add-builtin
+  m" *"        ' lisp-builtin-*        --add-builtin
+  m" /"        ' lisp-builtin-/        --add-builtin
+  m" <"        ' lisp-builtin-<        --add-builtin 
+  m" quote"    ' lisp-special-quote    --add-special
+  m" define"   ' lisp-special-define   --add-special
+  m" defmacro" ' lisp-special-defmacro --add-special
+  m" print"    ' lisp-builtin-print    --add-builtin
+  m" progn"    ' lisp-builtin-progn    --add-builtin
+  m" lambda"   ' lisp-special-lambda   --add-special
+  m" eval"     ' lisp-builtin-eval     --add-builtin
+  m" set"      ' lisp-special-set      --add-special
+  m" <"        ' lisp-builtin-<        --add-builtin
+  m" eql"      ' lisp-builtin-eql      --add-builtin
+  m" eq"       ' lisp-builtin-eq       --add-builtin
+  m" car"      ' lisp-builtin-car      --add-builtin
+  m" cdr"      ' lisp-builtin-cdr      --add-builtin
+  m" cons"     ' lisp-builtin-cons     --add-builtin
+  m" cons?"    ' lisp-builtin-cons?    --add-builtin
+  m" nil?"     ' lisp-builtin-nil?     --add-builtin
+  m" symbol?"  ' lisp-builtin-symbol?  --add-builtin
+  m" number?"  ' lisp-builtin-number?  --add-builtin
+  m" string?"  ' lisp-builtin-string?  --add-builtin
+  m" set"        0                     --add-builtin
+  m" if"       ' lisp-special-if       --add-special
+  m" error"    ' lisp-builtin-error    --add-builtin
   ;  symtab-init
 
 
@@ -68,7 +71,7 @@ include lisp-eval.frt
 
 : parse parser-init parse-lisp drop ;
 : e parse 
-." Program: \n" dup show  cr cr cr
+\ ." Program: \n" dup show  cr cr cr
 lisp-eval 
 cr
 ." Result: " show cr ;
